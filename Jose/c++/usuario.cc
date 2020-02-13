@@ -1,15 +1,8 @@
 /* José Guilherme de C. Rodrigues - 12/02/2020 */
-/* Observações: reinterpret_cast<char *> vai resultar em valores binários
- * representandos na endianess nativa do sistema, nesse caso, little endian.
- * read_string, write_string podem ser funções em um header separado.
- * Também seria interessante esconder todas essas escritas para o stringstream
- * dentro de outro header. */
 #include "usuario.hh"
-#include <sstream>
+#include "bytestream.hh"
 #include <fstream>
 #include <iostream>
-
-#include "bytestream.hh"
 
 Usuario::Usuario(unsigned id, const std::string &nome,
 	       	const std::string &email, const std::string &senha)

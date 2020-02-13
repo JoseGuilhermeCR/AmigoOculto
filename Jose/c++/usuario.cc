@@ -9,6 +9,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "bytestream.hh"
+
 Usuario::Usuario(unsigned id, const std::string &nome,
 	       	const std::string &email, const std::string &senha)
 	:
@@ -51,45 +53,23 @@ const std::string &Usuario::getSenha() const {
 }
 
 void Usuario::fromByteArray(const std::string &bytes) {
-	std::stringstream byteStream(bytes);
+	bytestream stream(bytes);
 
-	auto read_string = [&byteStream] (std::string &str) {
-				unsigned short tmpLength = 0;
-				byteStream.read(reinterpret_cast<char *>(&tmpLength),
-						sizeof(tmpLength));
-
-				char c;
-				for (unsigned short i = 0; i < tmpLength; ++i) {
-					byteStream.read(&c, sizeof(c));
-					str += c;
-				}
-			};
-
-	byteStream.read(reinterpret_cast<char *>(&m_id), sizeof(m_id));
-
-	read_string(m_nome);
-	read_string(m_email);
-	read_string(m_senha);
-
+	m_id = stream.read<decltype(m_id)>();
+	m_nome = stream.read_string();
+	m_email = stream.read_string();
+	m_senha = stream.read_string();
 }
 
 std::string Usuario::toByteArray() const {
-	std::stringstream byteStream;
+	bytestream stream;
 
-	byteStream.write(reinterpret_cast<const char *>(&m_id), sizeof(m_id));
+	stream.write<decltype(m_id)>(m_id); // unsigned int.
+	stream.write_string(m_nome);
+	stream.write_string(m_email);
+	stream.write_string(m_senha);
 
-	auto write_string = [&byteStream] (const std::string &str) {
-				unsigned short tmpLength = str.length();
-				byteStream.write(reinterpret_cast<char *>(&tmpLength),
-						 sizeof(tmpLength));
-				byteStream.write(str.c_str(), tmpLength);
-			};
-
-	write_string(m_nome);
-	write_string(m_email);
-	write_string(m_senha);
-
-	return byteStream.str();
+	return stream.get_bytes();
 }
 
 std::ostream &operator<<(std::ostream &os, const Usuario &usuario) {
@@ -99,26 +79,38 @@ std::ostream &operator<<(std::ostream &os, const Usuario &usuario) {
 }
 
 int main() {
-	/* SÓ PARA TESTES */
+	/* Some tests */
 	std::fstream file("user.db", file.binary | file.trunc | file.out | file.in);
 
 	Usuario user(1, "José Guilherme de C. Rodrigues", "joseguilhermebh@hotmail.com", "22");
 
+	// Write test.
+	// Gets user byte array.
 	std::string array = user.toByteArray();
-	file.write(array.c_str(), array.length());
 
+	bytestream stream;
+	// Writes the byte array into the stream preceding it by it's size.
+	stream.write_string(array);
+	// Write the user into the file.
+	file.write(stream.get_bytes().c_str(), stream.get_bytes().length());
+
+	// Rewind...
 	file.seekp(0);
 
-	Usuario user1;
+	// Let's do a reading test.
+	// Reading won't be a pain once we have a file manager, but... for now...
+	unsigned short userLength;
+	file.read(reinterpret_cast<char *>(&userLength), sizeof(userLength));
 
-	std::string bytes;
+	std::string userBytes;
 	char c;
-	for (unsigned short u = 0; u < 70; ++u) {
+	for (unsigned short u = 0; u < userLength; ++u) {
 		file.read(&c, sizeof(c));
-		bytes += c;
+		userBytes += c;
 	}
 
-	user1.fromByteArray(bytes);
+	Usuario user1;
+	user1.fromByteArray(userBytes);
 
 	std::cout << user1 << std::endl;
 

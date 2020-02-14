@@ -33,15 +33,15 @@ unsigned Usuario::getID() const {
 	return m_id;
 }
 
-const std::string &Usuario::getNome() const {
+std::string Usuario::getNome() const {
 	return m_nome;
 }
 
-const std::string &Usuario::getEmail() const {
+std::string Usuario::getEmail() const {
 	return m_email;
 }
 
-const std::string &Usuario::getSenha() const {
+std::string Usuario::getSenha() const {
 	return m_senha;
 }
 

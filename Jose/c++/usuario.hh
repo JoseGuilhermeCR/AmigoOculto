@@ -19,9 +19,9 @@ public:
 	void setSenha(const std::string &senha);
 
 	unsigned getID() const;
-	const std::string &getNome() const;
-	const std::string &getEmail() const;
-	const std::string &getSenha() const;
+	std::string getNome() const;
+	std::string getEmail() const;
+	std::string getSenha() const;
 
 	void fromByteArray(const std::string &bytes);
 	std::string toByteArray() const;

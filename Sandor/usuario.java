@@ -1,4 +1,4 @@
-class usuario{
+class Usuario{
   private int idUsuario;
   private String Nome;
   private String Email;
@@ -49,6 +49,28 @@ class usuario{
 
   public String chaveSecundaria(){
     return Email;
+  }
+
+  public byte[] toByteArray() throws IOException {
+    ByteArrayOutputStream dados = new ByteArrayOutputStream();
+    DataOutputStream saida = new DataOutputStream(dados);
+    saida.writeInt(this.idUsuario);
+    // Escrever os demais atributos do objeto usando métodos como writeInt(), writeUTF(), writeFloat(), ...
+    saida.writeUTF(Nome);
+    saida.writeUTF(Email);
+    saida.writeUTF(Senha);
+
+    return dados.toByteArray();
+  }
+
+  public void fromByteArray(byte[] bytes) throws IOException {
+    ByteArrayInputStream dados = new ByteArrayInputStream(bytes);
+    DataInputStream entrada = new DataInputStream(dados);
+    this.id = entrada.readInt();
+    // Ler os demais atributos do objeto usando métodos como readInt(), readUTF(), readFloat(), ...
+    Nome = entrada.readUTF();
+    Email = entrada.readUTF();
+    Senha = entrada.readUTF();
   }
 
 }

@@ -1,5 +1,9 @@
 /* José Guilherme de Castro Rodrigues - 12/02/2020 */
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 public class Usuario {
 
@@ -46,7 +50,7 @@ public class Usuario {
 		id = byteStreamInput.readInt();
 		nome = byteStreamInput.readUTF();
 		email = byteStreamInput.readUTF();
-		senha = bytesStreamInput.readUTF();
+		senha = byteStreamInput.readUTF();
 	}
 
 	public int getId() {

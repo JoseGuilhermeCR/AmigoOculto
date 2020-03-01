@@ -27,6 +27,10 @@ public class Usuario {
 		this.senha = senha;
 	}
 
+	public Usuario(byte[] array) throws IOException {
+		fromByteArray(array);
+	}
+
 	public void setID(int id) {
 		this.id = id;
 	}
@@ -53,7 +57,7 @@ public class Usuario {
 		senha = byteStreamInput.readUTF();
 	}
 
-	public int getId() {
+	public int getID() {
 		return id;
 	}
 
@@ -83,5 +87,9 @@ public class Usuario {
 
 	public String toString() {
 		return id + "|" + nome + "|" + email + "|" + senha;
+	}
+
+	public String chaveSecundaria() {
+		return email;
 	}
 }

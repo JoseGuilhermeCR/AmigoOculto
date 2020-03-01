@@ -1,3 +1,5 @@
+import java.io.*;
+
 class Usuario{
   private int idUsuario;
   private String Nome;
@@ -5,15 +7,15 @@ class Usuario{
   private String Senha;
 
   //Cronstructors
-  public usuario(){
-    idUsuário = 0;
+  public Usuario(){
+    idUsuario = 0;
     Nome = "";
     Email = "";
     Senha = "";
   }
 
-  public usuario(int i, String n, String e, String s){
-    idUsuário = i;
+  public Usuario(int i, String n, String e, String s){
+    idUsuario = i;
     Nome = n;
     Email = e;
     Senha = s;
@@ -66,7 +68,7 @@ class Usuario{
   public void fromByteArray(byte[] bytes) throws IOException {
     ByteArrayInputStream dados = new ByteArrayInputStream(bytes);
     DataInputStream entrada = new DataInputStream(dados);
-    this.id = entrada.readInt();
+    this.idUsuario = entrada.readInt();
     // Ler os demais atributos do objeto usando métodos como readInt(), readUTF(), readFloat(), ...
     Nome = entrada.readUTF();
     Email = entrada.readUTF();

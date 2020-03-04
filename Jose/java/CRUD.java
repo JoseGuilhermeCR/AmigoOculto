@@ -5,6 +5,9 @@ import java.io.IOException;
 
 import java.util.Scanner;
 
+// lápide,tamanho,registro -> registros válidos.
+// lápide,tamanho,próximo_registro_vazio (-1 ou endereço) -> registros deletados.
+
 public class CRUD {
 
 	private final String DIRETORIO = "dados";
@@ -20,8 +23,11 @@ public class CRUD {
 
 		arquivo = new RandomAccessFile(DIRETORIO + "/" + nomeArquivo + ".db", "rw");
 
-		if (arquivo.length() < 4)
-			arquivo.writeInt(0); // Cabeçalho do arquivo
+		// Cabeçalho do arquivo.
+		if (arquivo.length() < 12) {
+			arquivo.writeInt(0); // Último ID usado.
+			arquivo.writeLong(-1); // Primeiro espaço vazio (também o menor).
+		}
 
 		indiceDireto = new HashExtensivel(
 				10,
@@ -33,41 +39,70 @@ public class CRUD {
 				DIRETORIO + "/arvoreB." + nomeArquivo + ".idx");
 	}
 
+	// TODO: Registros excluídos precisam ter um long como endereço para o próximo espaço vazio!
+
 	// Retorna o id do usuário adicionado, ou -1 em caso de erro.
-	public int create(Usuario usuario) {
+	public int create(Usuario entidade) {
 		int ultimoID;
 
 		try {
 			// Lê último ID usado que está no cabeçalho do arquivo.
-			arquivo.seek(0);
-			ultimoID = arquivo.readInt();
+			ultimoID = fetchUltimoIDUsado();
 
 			// Incrementa-se o ID em 1, e atualiza no cabeçalho.
-			ultimoID += 1;
-			arquivo.seek(0);
-			arquivo.writeInt(ultimoID);
+			setUltimoIDUsado(++ultimoID);
 
 			// Coloca o ID no usuário recebido.
-			usuario.setID(ultimoID);
+			entidade.setID(ultimoID);
 
-			// Mover o ponteiro do arquivo para o fim do arquivo.
-			arquivo.seek(arquivo.length());
-			// Identificar o endereço em que o arquivo será escrito.
-			long endereco = arquivo.getFilePointer();
+			byte[] bytesEntidade = entidade.toByteArray();
+			short tamanhoEntidade = (short) bytesEntidade.length;
 
-			// Escrever o registro do usuário.
-			byte[] bytes = usuario.toByteArray();
+			// Variáveis de controle para busca em lista encadeada.
+			long registroVazioAnterior = -1;
+			long registroVazio = fetchPrimeiroRegistroVazio();
+			short tamanhoVazio = 0;
 
+			// Existe um endereço vazio, vamos procurá-lo e checar se esse registro cabe nele.
+			while (tamanhoVazio < tamanhoEntidade && registroVazio != -1) {
+				// Vai para o endereço pulando a lápide.
+				arquivo.seek(registroVazio + 1);
+				
+				tamanhoVazio = arquivo.readShort();
+
+				registroVazioAnterior = registroVazio;
+				// Lê o próximo registro vazio.
+				registroVazio = arquivo.readLong();
+			}
+
+			// Atenção, divisão de um float por 0.0f resultará em Inf. Não é preciso se preocupar com o 0.
+			float porcentagem = (float)tamanhoEntidade / (float)tamanhoVazio;
+
+			// Espaço vazio encontrado (mas a porcentagem gasta não será interessante)
+			// ou espaço vazio não encontrado. Nesses casos, inserimos no final.
+			boolean escreverNoFinal = porcentagem < 0.8 || porcentagem > 1.0;
+
+			long endereco = (escreverNoFinal) ? arquivo.length() : registroVazioAnterior;
+			
+			arquivo.seek(endereco);
+
+			// Escreve registro.
 			arquivo.writeByte(0);
-			arquivo.writeShort(bytes.length);
-			arquivo.write(bytes);
+
+			// Se é no final, temos que escrever o tamanho, se não, deixamos o tamanho do registro original.
+			if (escreverNoFinal)
+				arquivo.writeShort(bytesEntidade.length);
+			else
+				arquivo.seek(arquivo.getFilePointer() + 2);
+
+			arquivo.write(bytesEntidade);
 
 			// Incluir o par (ID, endereço) no índice direto (baseado em IDs).
 			indiceDireto.create(ultimoID, endereco);
 			// Incluir o par (chave secundária, ID) no índice indireto.
-			indiceIndireto.create(usuario.chaveSecundaria(), ultimoID);
+			indiceIndireto.create(entidade.chaveSecundaria(), ultimoID);
 		} catch (IOException exception) {
-			System.err.println("IOException occurred when trying to create: " + usuario);
+			System.err.println("IOException occurred when trying to create: " + entidade);
 			exception.printStackTrace();
 			ultimoID = -1;
 		} catch (Exception exception) {
@@ -233,6 +268,39 @@ public class CRUD {
 		}
 
 		return sucesso;
+	}
+
+	// Busca o último ID usado no cabeçalho do arquivo.
+	// O ponteiro do arquivo não sai do lugar onde estava quando a função é chamada.
+	private int fetchUltimoIDUsado() throws IOException {
+		long endereco = arquivo.getFilePointer();
+
+		arquivo.seek(0);
+		int ultimoID = arquivo.readInt();
+
+		arquivo.seek(endereco);
+
+		return ultimoID;
+	}
+
+	private void setUltimoIDUsado(int id) throws IOException {
+		long endereco = arquivo.getFilePointer();
+
+		arquivo.seek(0);
+		arquivo.writeInt(id);
+
+		arquivo.seek(endereco);
+	}
+
+	private long fetchPrimeiroRegistroVazio() throws IOException {
+		long endereco = arquivo.getFilePointer();
+
+		arquivo.seek(4); // Offset para chegar nesse item do cabeçalho.
+		long primeiroRegistroVazio = arquivo.readLong();
+
+		arquivo.seek(endereco);
+
+		return primeiroRegistroVazio;
 	}
 
 	// Main feita só para testes.

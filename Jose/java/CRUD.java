@@ -8,6 +8,8 @@ import java.util.Scanner;
 // lápide,tamanho,registro -> registros válidos.
 // lápide,tamanho,próximo_registro_vazio (-1 ou endereço) -> registros deletados.
 
+// TODO: Na hora de criar, temos que desencadear o registro vazio da lista !!! Aparentemente a função para encadear está funcionando.
+
 public class CRUD {
 
 	private final String DIRETORIO = "dados";
@@ -38,8 +40,6 @@ public class CRUD {
 				10,
 				DIRETORIO + "/arvoreB." + nomeArquivo + ".idx");
 	}
-
-	// TODO: Registros excluídos precisam ter um long como endereço para o próximo espaço vazio!
 
 	// Retorna o id do usuário adicionado, ou -1 em caso de erro.
 	public int create(Usuario entidade) {
@@ -199,6 +199,10 @@ public class CRUD {
 				arquivo.seek(endereco);
 				// Marca campo lápide. 
 				arquivo.writeByte(1);
+
+				// Coloca registro na lista de registros vazios.
+				encadearRegistroVazio(endereco, tamanhoGravado);
+
 				// Move ponteiro para fim do arquivo. 
 				arquivo.seek(arquivo.length());
 				// Identifica o novo endereço. 
@@ -232,32 +236,29 @@ public class CRUD {
 	public boolean delete(int id) {
 		boolean sucesso = true;
 
-		// TODO: Implementar DESAFIO 2 ?
-
 		try {
 			// Buscar endereço em índice direto.
 			long endereco = indiceDireto.read(id);
 
 			// Ir para endereço (pulando a lápide que gasta 1 byte)
-			arquivo.seek(endereco + 1);
+			arquivo.seek(endereco);
+			// Já marca lápide de uma vez.
+			arquivo.writeByte(1);
 
 			// Ler registro para ler chave secundária.
 			short tamanhoRegistro = arquivo.readShort();
-
 			byte[] registro = new byte[tamanhoRegistro];
 			arquivo.read(registro);
 
 			Usuario usuario = new Usuario(registro);
 
-			// Retornar ponteiro para endereço.
-			arquivo.seek(endereco);
-			// Marcar campo lápide com 1 ( deletado ).
-			arquivo.writeByte(1);
+			// Coloca registro na lista de registros vazios.
+			encadearRegistroVazio(endereco, tamanhoRegistro);
 
 			// Deletar a entrada do índice indireto usando chaveSecundária.
 			indiceIndireto.delete(usuario.chaveSecundaria());
 			// Deletar a entrada do índice direto usando ID.
-			indiceDireto.delete(usuario.getID());
+			indiceDireto.delete(id);
 		} catch (IOException exception) {
 			System.err.println("Erro ao tentar deletar usuário com id: " + id);
 			exception.printStackTrace();
@@ -268,6 +269,61 @@ public class CRUD {
 		}
 
 		return sucesso;
+	}
+
+
+	private void encadearRegistroVazio(long enderecoRegistro, short tamanhoRegistro) throws IOException {
+		long registro = fetchPrimeiroRegistroVazio();
+		// Se o cabeçalho não aponta pra nenhum registro vazio, a lista está vazia.
+		if (registro == -1) {
+			System.out.println("Cabeçalho aponta para registro -1.");
+			setPrimeiroRegistroVazio(enderecoRegistro);
+			// Pula a lápide e o tamanho do registro.
+			arquivo.seek(enderecoRegistro + 3);
+			// Escreve o endereço do pŕoximo registro vazio.
+			arquivo.writeLong(-1);
+		} else {
+			System.out.println("Cabeçalho aponta para: " + String.format("0x%08X", registro));
+			// Vai para o primeiro registro e pega seu tamanho.
+			arquivo.seek(registro + 1); // Pula lápide.
+			// Lê o tamanho dele.
+			short tamanhoApontado = arquivo.readShort();
+
+			// O nosso registro é menor do que o primeiro registro.
+			if (tamanhoRegistro < tamanhoApontado) {
+				System.out.println("Nosso registro é menor que o primeiro registro.");
+				// O cabeçalho aponta para o registro sendo adicionado.
+				setPrimeiroRegistroVazio(enderecoRegistro);
+				// O nosso registro aponta para o, já não mais, primeiro registro.
+				arquivo.seek(enderecoRegistro + 3); // Pula lápide e tamanho.
+				arquivo.writeLong(registro);
+			} else { // É maior do que o primeiro registro.
+				System.out.println("Nosso registro NÃO é menor que o primeiro registro.");
+				// registroAnterior é o primeiro registro.
+				long registroAnterior = registro;
+				// registro é o próximo registro. 
+				registro = arquivo.readLong();
+
+				// Enquanto não chegarmos ao fim da lista.
+				while (tamanhoRegistro > tamanhoApontado && registro != -1) {
+					arquivo.seek(registro + 1); // Pula lápide
+					tamanhoApontado = arquivo.readShort();
+
+					registroAnterior = registro;
+					registro = arquivo.readLong();
+				}
+
+				// Saindo do loop, registro anterior é o registro que apontará para o registro sendo encadeado.
+				System.out.println("Registro anterior ( " + String.format("0x%08X", registroAnterior) + ") apontará para: " + String.format("0x%08X", enderecoRegistro));
+				arquivo.seek(registroAnterior + 3); // Pula lápide e o tamanho do registro.
+				arquivo.writeLong(enderecoRegistro);
+
+				// O nosso registro, deve apontar para o endereço que está em registro.
+				System.out.println("Nosso registro ( " + String.format("0x%08X", enderecoRegistro) + ") apontará para: " + String.format("0x%08X", registro));
+				arquivo.seek(enderecoRegistro + 3); // Pula lápide e o tamanho do registro.
+				arquivo.writeLong(registro);
+			}
+		}
 	}
 
 	// Busca o último ID usado no cabeçalho do arquivo.
@@ -283,6 +339,8 @@ public class CRUD {
 		return ultimoID;
 	}
 
+	// "Setta" o último ID usado no cabeçalho do arquivo.
+	// O ponteiro do arquivo não sai do lugar onde estava quando a função é chamada.
 	private void setUltimoIDUsado(int id) throws IOException {
 		long endereco = arquivo.getFilePointer();
 
@@ -292,6 +350,8 @@ public class CRUD {
 		arquivo.seek(endereco);
 	}
 
+	// Busca o endereço do primeiro registro vazio no cabeçalho do arquivo.
+	// O ponteiro do arquivo não sai do lugar onde estava quando a função é chamada.
 	private long fetchPrimeiroRegistroVazio() throws IOException {
 		long endereco = arquivo.getFilePointer();
 
@@ -301,6 +361,17 @@ public class CRUD {
 		arquivo.seek(endereco);
 
 		return primeiroRegistroVazio;
+	}
+
+	// "Setta" o endereço do primeiro registro vazio no cabeçalho do arquivo.
+	// O ponteiro do arquivo não sai do lugar onde estava quando a função é chamada.
+	private void setPrimeiroRegistroVazio(long enderecoRegistro) throws IOException {
+		long endereco = arquivo.getFilePointer();
+
+		arquivo.seek(4); // Offset para chegar nesse item do cabeçalho.
+		arquivo.writeLong(enderecoRegistro);
+
+		arquivo.seek(endereco);
 	}
 
 	// Main feita só para testes.

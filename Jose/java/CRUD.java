@@ -1,11 +1,9 @@
-/* José Guilherme de Castro Rodrigues - 19/02/2020 - 01/03/2020 */
+/* José Guilherme de Castro Rodrigues - 19/02/2020 - 04/03/2020 */
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.io.IOException;
 
 import java.util.Scanner;
-
-/* TODO: Refatorar. */
 
 public class CRUD {
 
@@ -35,36 +33,39 @@ public class CRUD {
 				DIRETORIO + "/arvoreB." + nomeArquivo + ".idx");
 	}
 
-	/* Retorna o id do usuário adicionado, ou -1 em caso de erro */
+	// Retorna o id do usuário adicionado, ou -1 em caso de erro.
 	public int create(Usuario usuario) {
 		int ultimoID;
+
 		try {
-			/* Lê último ID usado que está no cabeçalho do arquivo. */
+			// Lê último ID usado que está no cabeçalho do arquivo.
 			arquivo.seek(0);
 			ultimoID = arquivo.readInt();
 
-			/* Incrementa-se o ID em 1, e atualiza no cabeçalho. */
+			// Incrementa-se o ID em 1, e atualiza no cabeçalho.
 			ultimoID += 1;
 			arquivo.seek(0);
 			arquivo.writeInt(ultimoID);
 
-			/* Coloca o ID no usuário recebido. */
+			// Coloca o ID no usuário recebido.
 			usuario.setID(ultimoID);
 
-			/* Mover o ponteiro do arquivo para o fim do arquivo. */
+			// Mover o ponteiro do arquivo para o fim do arquivo.
 			arquivo.seek(arquivo.length());
-			/* Identificar o endereço em que o arquivo será escrito. */
+			// Identificar o endereço em que o arquivo será escrito.
 			long endereco = arquivo.getFilePointer();
 
-			/* Escrever o registro do usuário. */
-			escreverRegistro(usuario);
+			// Escrever o registro do usuário.
+			byte[] bytes = usuario.toByteArray();
 
-			/* Incluir o par (ID, endereço) no índice direto (baseado em IDs). */
-			// sucesso unused for now.
-			boolean sucesso = indiceDireto.create(ultimoID, endereco);
+			arquivo.writeByte(0);
+			arquivo.writeShort(bytes.length);
+			arquivo.write(bytes);
 
-			/* Incluir o par (chave secundária, ID) no índice indireto. */
-			sucesso = indiceIndireto.create(usuario.chaveSecundaria(), ultimoID);
+			// Incluir o par (ID, endereço) no índice direto (baseado em IDs).
+			indiceDireto.create(ultimoID, endereco);
+			// Incluir o par (chave secundária, ID) no índice indireto.
+			indiceIndireto.create(usuario.chaveSecundaria(), ultimoID);
 		} catch (IOException exception) {
 			System.err.println("IOException occurred when trying to create: " + usuario);
 			exception.printStackTrace();
@@ -77,28 +78,28 @@ public class CRUD {
 		return ultimoID;
 	}
 
-	/* Retorna o usuário com determinado ID, ou null caso o usuário não exista. */
+	// Retorna o usuário com determinado ID, ou null caso o usuário não exista.
 	public Usuario read(int id) {
 		Usuario usuario = new Usuario();
 
 		try {
-			/* Buscar o endereço do registro do usuário no índice direto. */
+			// Buscar o endereço do registro do usuário no índice direto.
 			// Retorna -1 no caso em que não encontrar.
 			long endereco = indiceDireto.read(id); 
 
-			/* Mover o ponteiro do arquivo para o endereço recuperado. */
+			// Mover o ponteiro do arquivo para o endereço recuperado.
 			// Caso endereço seja -1, IOException vai ocorrer.
 			arquivo.seek(endereco);
 
-			/* Ler lápide */
+			// Ler lápide
 			byte lapide = arquivo.readByte();
 
 			if (lapide == 0) {
-				/* Ler tamanho */
+				// Ler tamanho
 				short tamanhoUsuario = arquivo.readShort();
 				
 				byte[] vetorUsuario = new byte[tamanhoUsuario];
-				/* Ler vetor de bytes */
+				// Ler vetor de bytes
 				arquivo.read(vetorUsuario);
 
 				usuario.fromByteArray(vetorUsuario);
@@ -123,11 +124,11 @@ public class CRUD {
 		Usuario usuario = new Usuario();
 
 		try {
-			/* Busca o ID no índice indireto, usando o valor retornado pelo método
-			 * chaveSecundaria() */
+			// Busca o ID no índice indireto, usando o valor retornado pelo método
+			// chaveSecundaria()
 			int id = indiceIndireto.read(email);
 
-			/* Só invocamos o read que usa ID */
+			// Só invocamos o read que usa ID
 			usuario = read(id);
 		} catch (IOException exception) {
 			System.err.println("Erro ao tentar ler usuário de email: " + email);
@@ -137,70 +138,52 @@ public class CRUD {
 		return usuario;
 	}
 
-	/* Atualiza o usuário. Retorna true em caso de sucesso ou false em caso de falha. */
-	public boolean update(Usuario usuario) {
+	// Atualiza o usuário. Retorna true em caso de sucesso ou false em caso de falha.
+	public boolean update(Usuario entidade) {
 		boolean sucesso = true;
 
-		// TODO: Implementar DESAFIO 1 ?
-
 		try {
-			/* Buscar o endereço do registro do usuário no índice direto usando ID */
-			long endereco = indiceDireto.read(usuario.getID());
-			/* Mover o ponteiro no arquivo de usuários para o endereço recuperado */
-			arquivo.seek(endereco);
+			// Buscar o endereço do registro da entidade no índice direto usando ID 
+			long endereco = indiceDireto.read(entidade.getID());
+			// Mover o ponteiro no arquivo de entidades para o endereço recuperado (depois da lápide do registro) 
+			arquivo.seek(endereco + 1);
 
-			/* Ler o registro do usuário e checar se houve variação no tamanho do registro */
-			// Lê a lápide.
-			byte lapide = arquivo.readByte();
-			// Lê tamanho do registro gravado.
+			// Ler o registro da entidade e checar se houve variação no tamanho do registro 
 			short tamanhoGravado = arquivo.readShort();
-			// Lê o registro.
-			byte[] registro = new byte[tamanhoGravado];
-			arquivo.read(registro);
-			Usuario usuarioGravado = new Usuario(registro);
 
-			/* Retorna ponteiro para endereço recuperado */
-			arquivo.seek(endereco);
+			byte[] bytesEntidadeAtualizada = entidade.toByteArray();
+			short novoTamanho = (short) bytesEntidadeAtualizada.length;
 
-			byte[] vetorUsuarioAtualizado = usuario.toByteArray();
-			if (tamanhoGravado == vetorUsuarioAtualizado.length) {
-				/* Usuário não mudou de tamanho após atualização. */
-				/* Sobrescrever o registro atual. */
-				escreverRegistro(usuario);
-			} else {
-				/* Usuário mudou de tamanho após atualização. */
-				/* Marca campo como lápide. */
+			// Calculando o percentual de espaço usado pelo novo tamanho 
+			float percentual = (float)novoTamanho / tamanhoGravado;
+
+			// Novo tamanho gasta menos que 80% do espaço ou é maior que o espaço original.
+			// Escrevemos no fim do arquivo.
+			if (percentual < 0.80 || percentual > 1.0) {
+				// Retorna ponteiro para endereço recuperado 
+				arquivo.seek(endereco);
+				// Marca campo lápide. 
 				arquivo.writeByte(1);
-
-				/* Move ponteiro para fim do arquivo. */
+				// Move ponteiro para fim do arquivo. 
 				arquivo.seek(arquivo.length());
-
-				/* Identificar o endereço onde registro será escrito. */
+				// Identifica o novo endereço. 
 				endereco = arquivo.getFilePointer();
-
-				/* Escrever novo registro. */
-				escreverRegistro(usuario);
-
-				/* Atualizar o par (ID, endereço) no índice direto. */
-				indiceDireto.delete(usuario.getID());
-				indiceDireto.create(usuario.getID(), endereco);
+				// Escreve novo campo
+				arquivo.writeByte(0);
+				arquivo.writeShort(bytesEntidadeAtualizada.length);
+				arquivo.write(bytesEntidadeAtualizada);
+				// Atualiza índice direto. (Mudança de endereço).
+				indiceDireto.update(entidade.getID(), endereco);
+			} else {
+				// Reaproveita espaço.
+				arquivo.seek(endereco + 3); // (1 byte para lápide e 2 para tamanho que não será alterado).
+				arquivo.write(bytesEntidadeAtualizada);
 			}
 
-			/* Caso chave secundária tenha mudado. */
-			if (!usuario.chaveSecundaria().equals(usuarioGravado.chaveSecundaria())) {
-				/* Atualizar o par (chaveSecundária, ID) no índice indireto. */
-
-				// Essas funções retornam um boolean, mas como o resultado não bate com o que acontece
-				// suponho que não sejam indicadores de sucesso/falha.
-
-				// Deleta chave anterior.
-				indiceIndireto.delete(usuarioGravado.chaveSecundaria());
-				// Adiciona nova.
-				indiceIndireto.create(usuario.chaveSecundaria(), usuario.getID());
-			}
-
+			// Atualiza índice indireto para caso de mudança de chave secundária.
+			indiceIndireto.create(entidade.chaveSecundaria(), entidade.getID());
 		} catch (IOException exception) {
-			System.err.println("Erro ao tentar atualizar usuário de id: " + usuario.getID());
+			System.err.println("Erro ao tentar atualizar usuário de id: " + entidade.getID());
 			exception.printStackTrace();
 			sucesso = false;
 		} catch (Exception exception) {
@@ -217,14 +200,13 @@ public class CRUD {
 		// TODO: Implementar DESAFIO 2 ?
 
 		try {
-			/* Buscar endereço em índice direto. */
+			// Buscar endereço em índice direto.
 			long endereco = indiceDireto.read(id);
 
-			/* Ir para endereço. */
-			arquivo.seek(endereco);
+			// Ir para endereço (pulando a lápide que gasta 1 byte)
+			arquivo.seek(endereco + 1);
 
-			/* Ler registro para ler chave secundária. */
-			byte lapide = arquivo.readByte();
+			// Ler registro para ler chave secundária.
 			short tamanhoRegistro = arquivo.readShort();
 
 			byte[] registro = new byte[tamanhoRegistro];
@@ -232,14 +214,14 @@ public class CRUD {
 
 			Usuario usuario = new Usuario(registro);
 
-			/* Retornar ponteiro para endereço. */
+			// Retornar ponteiro para endereço.
 			arquivo.seek(endereco);
-			/* Marcar campo lápide com 1 ( deletado ). */
+			// Marcar campo lápide com 1 ( deletado ).
 			arquivo.writeByte(1);
 
-			/* Deletar a entrada do índice indireto usando chaveSecundária. */
+			// Deletar a entrada do índice indireto usando chaveSecundária.
 			indiceIndireto.delete(usuario.chaveSecundaria());
-			/* Deletar a entrada do índice direto usando ID. */
+			// Deletar a entrada do índice direto usando ID.
 			indiceDireto.delete(usuario.getID());
 		} catch (IOException exception) {
 			System.err.println("Erro ao tentar deletar usuário com id: " + id);
@@ -253,19 +235,7 @@ public class CRUD {
 		return sucesso;
 	}
 
-	/* Escreve um registro (lápide, tamanho, entidade) considerando que o ponteiro
-	 * do arquivo esteja no local certo. */
-	private void escreverRegistro(Usuario usuario) throws IOException {
-		arquivo.writeByte(0); // Lápide (0, não marcada).
-
-		// May throw IOException.
-		byte[] vetorUsuario = usuario.toByteArray();
-
-		arquivo.writeShort(vetorUsuario.length); // Tamanho do vetor de bytes.
-		arquivo.write(vetorUsuario); // Vetor de bytes.
-	}
-
-	/* Main feita só para testes. */
+	// Main feita só para testes.
 	public static void main(String[] args) {
 		try {
 
@@ -370,6 +340,7 @@ public class CRUD {
 				scanner.nextLine();
 			}
 
+			scanner.close();
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}

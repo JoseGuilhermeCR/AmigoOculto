@@ -1,14 +1,26 @@
-/* José Guilherme de Castro Rodrigues - 19/02/2020 - 04/03/2020 */
+/* José Guilherme de Castro Rodrigues - 19/02/2020 - 05/03/2020 */
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.io.IOException;
 
 import java.util.Scanner;
 
-// lápide,tamanho,registro -> registros válidos.
-// lápide,tamanho,próximo_registro_vazio (-1 ou endereço) -> registros deletados.
-
-// TODO: Na hora de criar, temos que desencadear o registro vazio da lista !!! Aparentemente a função para encadear está funcionando.
+/* O CRUD usa um índice direto de IDs para endereços e um indireto de emais para IDs.
+ * O cabeçalho do arquivo consiste de 4 bytes que guardam o último ID usado por um registro seguido
+ * de 8 bytes que guardam o próximo endereço vazio disponível no arquivo. 
+ * Um registro pode ter dois formatos. O primeiro formato é usado quando o registro é válido e consiste
+ * das seguintes propriedades: 1 byte indicando lápide marcada como 0, 2 bytes que indicam o tamanho
+ * do registro e por fim n bytes de registro. 
+ * O segundo formato é usado nos registros que foram deletados e consiste de 1 byte indicando lápide
+ * marcada como 1, 2 bytes que indicam o tamanho original do registro e por fim 8 bytes indicando o endereço do próximo
+ * registro vazio na lista de registros vazios.
+ * Observe que no segundo caso, todos os registros têm (tamanho original - 8) bytes de lixo. 
+ * A lista encadeada é formada por um conjunto de registros vazios. Cada vez que um registro é deletado,
+ * ele é encadeado na lista de forma que a lista fique ordenada de forma crescente. Toda vez que um registro
+ * é criado, checa-se a existência de um registro vazio na lista para que haja reaproveitamento de espaço.
+ * Caso um registro vazio seja encontrado, checa-se se a porcentagem do espaço gasto pelo novo registro é maior
+ * que 80% do tamanho do registro vazio, se sim, ele é desencadeado e usado, se não, o novo registro será escrito
+ * no final do arquivo e a lista encadeada não sofre alteração. */
 
 public class CRUD {
 
@@ -90,10 +102,14 @@ public class CRUD {
 			arquivo.writeByte(0);
 
 			// Se é no final, temos que escrever o tamanho, se não, deixamos o tamanho do registro original.
-			if (escreverNoFinal)
+			if (escreverNoFinal) {
 				arquivo.writeShort(bytesEntidade.length);
-			else
-				arquivo.seek(arquivo.getFilePointer() + 2);
+			} else {
+				// Também é necessário desencadear esse registro da lista antes de utilizá-lo.
+				desencadearRegistroVazio(endereco);
+				// Pula a lápide e o tamanho desse registro.
+				arquivo.seek(endereco + 3);
+			}
 
 			arquivo.write(bytesEntidade);
 
@@ -271,7 +287,7 @@ public class CRUD {
 		return sucesso;
 	}
 
-
+	// Adiciona o registro vazio na lista encadeada de registros vazios.
 	private void encadearRegistroVazio(long enderecoRegistro, short tamanhoRegistro) throws IOException {
 		long registro = fetchPrimeiroRegistroVazio();
 		// Se o cabeçalho não aponta pra nenhum registro vazio, a lista está vazia.
@@ -324,6 +340,32 @@ public class CRUD {
 				arquivo.writeLong(registro);
 			}
 		}
+	}
+
+	// Remove o registro vazio apontado pelo enderecoRegistro da lista encadeada de registros vazios.
+	private void desencadearRegistroVazio(long enderecoRegistro) throws IOException {
+		long registroAnterior = 4; // Registro anterior é na verdade o cabeçalho.
+		long registro = fetchPrimeiroRegistroVazio(); // Endereço do primeiro registro vazio da lista.
+
+		// Anda até o registro que será desencadeado para poder ter acesso ao registro anterior.
+		while (registro != enderecoRegistro) {
+			arquivo.seek(registro + 3); // Pula lápide e tamanho.
+			
+			registroAnterior = registro;
+			registro = arquivo.readLong();
+		}
+		System.out.println("Registro que será desencadeado está sendo apontando por " + String.format("0x%08X", registroAnterior));
+
+		// Vai no registro que será desencadeado e pega o endereço apontado por ele.
+		arquivo.seek(enderecoRegistro + 3);
+		long proximoRegistro = arquivo.readLong();
+		System.out.println("Registro que será desencadeado está apontando para " + String.format("0x%08X", proximoRegistro));
+
+		// Caso o registro anterior não continue sendo o cabeçalho, temos que ir para ele e pular a lápide + tamanho.
+		// Se continuar sendo o cabeçalho, só fazemos um seek para a posição correta  (não aplicamos o offset).
+		arquivo.seek(registroAnterior + ((registroAnterior != 4) ? 3 : 0));
+		
+		arquivo.writeLong(proximoRegistro);		
 	}
 
 	// Busca o último ID usado no cabeçalho do arquivo.
@@ -387,11 +429,12 @@ public class CRUD {
 			System.out.println("3 - Ler Chave Secundaria");
 			System.out.println("4 - Atualizar");
 			System.out.println("5 - Deletar");
-			System.out.println("6 - Sair");
+			System.out.println("6 - Criar usuário de tamanho específico");
+			System.out.println("7 - Sair");
 			int opcao = scanner.nextInt();
 			scanner.nextLine();
 
-			while (opcao != 6) {
+			while (opcao != 7) {
 				switch (opcao) {
 					case 1:
 					{
@@ -464,6 +507,28 @@ public class CRUD {
 
 						break;
 					}
+					case 6:
+					{
+						final int tamanhoMinimo = 10;
+
+						System.out.println("Digite o tamanho do usuário: ");
+						int tamanho = scanner.nextInt();
+						scanner.nextLine();
+
+						int tamanhoPreciso = tamanho - tamanhoMinimo;
+
+						String email = new String();
+						for (int i = 0; i < tamanhoPreciso; ++i)
+							email += "a";
+
+						
+						Usuario usuario = new Usuario(0, "", email, "");
+
+						int insertedID = crud.create(usuario);
+						System.out.println("Usuário: " + usuario + " criado com ID: " + insertedID);
+
+						break;
+					}
 					default:
 						System.out.println("Opção não válida.");
 						break;
@@ -474,7 +539,8 @@ public class CRUD {
 				System.out.println("3 - Ler Chave Secundaria");
 				System.out.println("4 - Atualizar");
 				System.out.println("5 - Deletar");
-				System.out.println("6 - Sair");
+				System.out.println("6 - Criar usuário de tamanho específico");
+				System.out.println("7 - Sair");
 				opcao = scanner.nextInt();
 				scanner.nextLine();
 			}

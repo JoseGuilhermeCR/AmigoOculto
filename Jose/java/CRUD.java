@@ -1,9 +1,10 @@
 /* José Guilherme de Castro Rodrigues - 19/02/2020 - 05/03/2020 */
 import java.io.File;
+import java.io.FileWriter;
 import java.io.RandomAccessFile;
 import java.io.IOException;
-
-import java.util.Scanner;
+import java.time.LocalDateTime;
+//import java.util.Scanner;
 
 /* O CRUD usa um índice direto de IDs para endereços e um indireto de emais para IDs.
  * O cabeçalho do arquivo consiste de 4 bytes que guardam o último ID usado por um registro seguido
@@ -27,6 +28,7 @@ public class CRUD {
 	private final String DIRETORIO = "dados";
 
 	private RandomAccessFile arquivo;
+	private FileWriter arquivoLog;
 	private HashExtensivel indiceDireto;
 	private ArvoreBMais_String_Int indiceIndireto;
 
@@ -36,6 +38,7 @@ public class CRUD {
 			dir.mkdir();
 
 		arquivo = new RandomAccessFile(DIRETORIO + "/" + nomeArquivo + ".db", "rw");
+		arquivoLog = new FileWriter(DIRETORIO + "/" + nomeArquivo + ".log", true);
 
 		// Cabeçalho do arquivo.
 		if (arquivo.length() < 12) {
@@ -117,12 +120,8 @@ public class CRUD {
 			indiceDireto.create(ultimoID, endereco);
 			// Incluir o par (chave secundária, ID) no índice indireto.
 			indiceIndireto.create(entidade.chaveSecundaria(), ultimoID);
-		} catch (IOException exception) {
-			System.err.println("IOException occurred when trying to create: " + entidade);
-			exception.printStackTrace();
-			ultimoID = -1;
 		} catch (Exception exception) {
-			exception.printStackTrace();
+			reportarExcecao("Erro ao inserir entidade!", exception);
 			ultimoID = -1;
 		}
 
@@ -159,12 +158,8 @@ public class CRUD {
 				// Retornamos null.
 				usuario = null;
 			}
-		} catch (IOException exception) {
-			System.err.println("Erro ao tentar ler usuário de id: " + id);
-			exception.printStackTrace();
-			usuario = null;
 		} catch (Exception exception) {
-			exception.printStackTrace();
+			reportarExcecao("Erro ao tentar ler entidade!", exception);
 			usuario = null;
 		}
 
@@ -182,7 +177,7 @@ public class CRUD {
 			// Só invocamos o read que usa ID
 			usuario = read(id);
 		} catch (IOException exception) {
-			System.err.println("Erro ao tentar ler usuário de email: " + email);
+			reportarExcecao("Erro ao tentar ler entidade!", exception);
 			usuario = null;
 		}
 
@@ -237,12 +232,8 @@ public class CRUD {
 
 			// Atualiza índice indireto para caso de mudança de chave secundária.
 			indiceIndireto.create(entidade.chaveSecundaria(), entidade.getID());
-		} catch (IOException exception) {
-			System.err.println("Erro ao tentar atualizar usuário de id: " + entidade.getID());
-			exception.printStackTrace();
-			sucesso = false;
 		} catch (Exception exception) {
-			exception.printStackTrace();
+			reportarExcecao("Erro ao tentar atualizar entidade de id: " + entidade.getID(), exception);
 			sucesso = false;
 		}
 
@@ -275,12 +266,8 @@ public class CRUD {
 			indiceIndireto.delete(usuario.chaveSecundaria());
 			// Deletar a entrada do índice direto usando ID.
 			indiceDireto.delete(id);
-		} catch (IOException exception) {
-			System.err.println("Erro ao tentar deletar usuário com id: " + id);
-			exception.printStackTrace();
-			sucesso = false;
 		} catch (Exception exception) {
-			exception.printStackTrace();
+			reportarExcecao("Erro ao tentar deletar entidade de id: " + id, exception);
 			sucesso = false;
 		}
 
@@ -416,8 +403,29 @@ public class CRUD {
 		arquivo.seek(endereco);
 	}
 
+	// Escreve a exceção ocorrida em um arquivo de log.
+	private void reportarExcecao(String mensagem, Exception exception) {
+		try {
+			arquivoLog.write(
+				"Exceção: " + mensagem + " Data: " +  LocalDateTime.now().toString() + "\n" +
+				exception.toString() + "\n"
+			);
+			
+			StackTraceElement[] elements = exception.getStackTrace();
+
+			arquivoLog.write("======StackTrace======\n");
+			for (StackTraceElement element : elements) {
+				arquivoLog.write(element.toString() + "\n");
+			}
+
+			arquivoLog.write("\n\n");
+
+			arquivoLog.flush();
+		} catch(IOException e) { }
+	}
+
 	// Main feita só para testes.
-	public static void main(String[] args) {
+	/*public static void main(String[] args) {
 		try {
 
 			CRUD crud = new CRUD("user");
@@ -549,5 +557,5 @@ public class CRUD {
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}
-	}
+	}*/
 }

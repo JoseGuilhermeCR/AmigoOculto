@@ -68,11 +68,18 @@ class Usuario{
   public void fromByteArray(byte[] bytes) throws IOException {
     ByteArrayInputStream dados = new ByteArrayInputStream(bytes);
     DataInputStream entrada = new DataInputStream(dados);
-    this.idUsuario = entrada.readInt();
-    // Ler os demais atributos do objeto usando métodos como readInt(), readUTF(), readFloat(), ...
+
+    idUsuario = entrada.readInt();
     Nome = entrada.readUTF();
     Email = entrada.readUTF();
     Senha = entrada.readUTF();
+  }
+
+  public void printUser(){
+    System.out.println("ID: " + idUsuario);
+    System.out.println("Nome: " + Nome);
+    System.out.println("Email: " + Email);
+    System.out.println("Senha: " + Senha);
   }
 
 }

@@ -70,5 +70,44 @@ public class CRUD {
   public Usuario read(String chave) throws Exception{
     return read(indiceIndireto.read(chave));
   }
+  //----------------------------------------------------------------------------
+
+  public void update(Usuario updatedUser) throws Exception{
+
+    long address = indiceDireto.read(updatedUser.getID());
+
+    arquivo.seek(address+1);
+    short userSize = arquivo.readShort();
+
+    byte[] updatedByteArray = updatedUser.toByteArray();
+    short updatedSize = (short)updatedByteArray.length;
+
+    System.out.println(userSize+" | "+updatedSize);
+
+    if(userSize == updatedSize){
+      arquivo.seek(address+3);
+      arquivo.write(updatedByteArray);
+
+    } else {
+      arquivo.seek(arquivo.length());
+      long offSet = arquivo.getFilePointer();
+      boolean lapide = true;
+      arquivo.writeBoolean(lapide);
+      arquivo.writeShort(updatedByteArray.length);
+      arquivo.write(updatedByteArray);
+      indiceDireto.update(updatedUser.getID(), offSet);
+
+    }
+
+    indiceIndireto.update(updatedUser.chaveSecundaria(), updatedUser.getID());
+
+  }
 
 }
+
+
+
+
+
+
+//

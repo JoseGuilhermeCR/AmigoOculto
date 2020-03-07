@@ -5,11 +5,13 @@ import java.io.*;
     Usuario user;
     try{
       CRUD c = new CRUD("data");
-      c.create("ar","goleiro","carro");
-      user = c.read("goleiro");
+      c.create("ar","bola","carro");
+      user = c.read("gol");
+      user.setNome("agir");
+      c.update(user);
 
       //System.out.println(user.getNome());
-      user.printUser();
+      //user.printUser();
 
     }catch (Exception e) {
       e.printStackTrace();

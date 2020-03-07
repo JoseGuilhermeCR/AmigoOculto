@@ -6,9 +6,11 @@ import java.io.*;
     try{
       CRUD c = new CRUD("data");
       c.create("ar","bola","carro");
-      user = c.read("gol");
-      user.setNome("agir");
-      c.update(user);
+      //user = c.read("gol");
+      //user.setNome("agir");
+      //c.update(user);
+
+      c.delete(4);
 
       //System.out.println(user.getNome());
       //user.printUser();

@@ -31,14 +31,14 @@ public class CRUD {
     arquivo.seek(0);        //updates the file id header
     arquivo.writeInt(id);
 
-    Usuario user = new Usuario(id,Nome,Email,Senha);  //creates the user to put into the file
-    byte[] i = user.toByteArray();
-    arquivo.seek(arquivo.length());
+    Usuario user = new Usuario(id,Nome,Email,Senha);  // creates the user to put into the file
+    byte[] i = user.toByteArray();        // creates a byte array with the user info.
+    arquivo.seek(arquivo.length());     // goes to the end of the file
     long offSet = arquivo.getFilePointer();
     boolean lapide = true;
-    arquivo.writeBoolean(lapide);
-    arquivo.writeShort(i.length);
-    arquivo.write(i);
+    arquivo.writeBoolean(lapide);    // writes that it is a valid registry
+    arquivo.writeShort(i.length);    // writes the size of the entity
+    arquivo.write(i);                // writes the entity it self
 
     indiceDireto.create(user.getID(),offSet);
     indiceIndireto.create(user.getEmail(),user.getID());
@@ -54,8 +54,8 @@ public class CRUD {
     arquivo.seek(address);    //vai para o endereco
 
     short size = 0;
-    if(arquivo.readBoolean()){
-      size = arquivo.readShort();
+    if(arquivo.readBoolean()){         //checks if the registry is not marked for deletion
+      size = arquivo.readShort();      //
       byte[] data = new byte[size];
       arquivo.read(data);
 
@@ -82,13 +82,15 @@ public class CRUD {
     byte[] updatedByteArray = updatedUser.toByteArray();
     short updatedSize = (short)updatedByteArray.length;
 
-    System.out.println(userSize+" | "+updatedSize);
+    System.out.println(userSize +" | "+ updatedSize);
 
     if(userSize == updatedSize){
       arquivo.seek(address+3);
       arquivo.write(updatedByteArray);
 
     } else {
+      arquivo.seek(address);
+      arquivo.writeBoolean(false);
       arquivo.seek(arquivo.length());
       long offSet = arquivo.getFilePointer();
       boolean lapide = true;
@@ -100,6 +102,27 @@ public class CRUD {
     }
 
     indiceIndireto.update(updatedUser.chaveSecundaria(), updatedUser.getID());
+
+  }
+
+  public void delete(int id) throws Exception{
+    long address = indiceDireto.read(id);
+    arquivo.seek(address+1);
+
+    Usuario user = new Usuario();
+    short size = 0;
+    size = arquivo.readShort();
+    byte[] data = new byte[size];
+    arquivo.read(data);
+    user.fromByteArray(data);
+
+    String chave = user.chaveSecundaria();
+
+    arquivo.seek(address);
+    arquivo.writeBoolean(false);
+
+    indiceDireto.delete(id);
+    indiceIndireto.delete(chave);
 
   }
 

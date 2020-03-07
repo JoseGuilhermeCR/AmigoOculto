@@ -37,7 +37,7 @@ public class CRUD {
     long offSet = arquivo.getFilePointer();
     boolean lapide = true;
     arquivo.writeBoolean(lapide);
-    arquivo.write(i.length);
+    arquivo.writeShort(i.length);
     arquivo.write(i);
 
     indiceDireto.create(user.getID(),offSet);
@@ -47,24 +47,28 @@ public class CRUD {
   }
 
   public Usuario read(int id) throws Exception{
+    Usuario user = new Usuario();
 
     long address = indiceDireto.read(id);  //acha o endereço
 
     arquivo.seek(address);    //vai para o endereco
 
-    int size = 0;
+    short size = 0;
     if(arquivo.readBoolean()){
-      size = arquivo.readInt();
-    }
-    byte[] data = new byte[size];
+      size = arquivo.readShort();
+      byte[] data = new byte[size];
+      arquivo.read(data);
 
-    Usuario user = new Usuario();
-    user.fromByteArray(data);
+      user.fromByteArray(data);
+    }
+
     System.out.println(user.getNome());
 
-
-
     return user;
+  }
+
+  public Usuario read(String chave) throws Exception{
+    return read(indiceIndireto.read(chave));
   }
 
 }

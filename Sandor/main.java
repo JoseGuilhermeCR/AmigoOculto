@@ -5,9 +5,10 @@ import java.io.*;
     Usuario user;
     try{
       CRUD c = new CRUD("data");
-      c.create("ar","bola","carro");
-      user = c.read(1);
-      System.out.println(user.getNome());
+      c.create("ar","goleiro","carro");
+      user = c.read("goleiro");
+
+      //System.out.println(user.getNome());
       user.printUser();
 
     }catch (Exception e) {

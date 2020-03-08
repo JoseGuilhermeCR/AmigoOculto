@@ -35,13 +35,13 @@ class Resultado {
 
 public class AmigoOculto {
 
-	private CRUD crudUsuario;
+	private CRUD<Usuario> crudUsuario;
 	private Scanner scanner;
 
 	public AmigoOculto() throws Exception {
 		scanner = new Scanner(System.in);
 
-		crudUsuario = new CRUD("user");
+		crudUsuario = new CRUD<>("user", Usuario.class.getConstructor());
 	}
 
 	public Resultado run() {

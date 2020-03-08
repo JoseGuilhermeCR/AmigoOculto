@@ -1,4 +1,5 @@
 /* José Guilherme de Castro Rodrigues - 19/02/2020 - 05/03/2020 */
+import java.lang.reflect.Constructor;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.RandomAccessFile;
@@ -23,16 +24,20 @@ import java.time.LocalDateTime;
  * que 80% do tamanho do registro vazio, se sim, ele é desencadeado e usado, se não, o novo registro será escrito
  * no final do arquivo e a lista encadeada não sofre alteração. */
 
-public class CRUD {
+public class CRUD<T extends Entidade> {
 
 	private final String DIRETORIO = "dados";
+
+	private Constructor<T> tConstructor;
 
 	private RandomAccessFile arquivo;
 	private FileWriter arquivoLog;
 	private HashExtensivel indiceDireto;
 	private ArvoreBMais_String_Int indiceIndireto;
 
-	public CRUD(String nomeArquivo) throws Exception {
+	public CRUD(String nomeArquivo, Constructor<T> tConstructor) throws Exception {
+		this.tConstructor = tConstructor;
+
 		File dir = new File(DIRETORIO);
 		if (!dir.exists())
 			dir.mkdir();
@@ -57,7 +62,7 @@ public class CRUD {
 	}
 
 	// Retorna o id do usuário adicionado, ou -1 em caso de erro.
-	public int create(Usuario entidade) {
+	public int create(T entidade) {
 		int ultimoID;
 
 		try {
@@ -67,7 +72,7 @@ public class CRUD {
 			// Incrementa-se o ID em 1, e atualiza no cabeçalho.
 			setUltimoIDUsado(++ultimoID);
 
-			// Coloca o ID no usuário recebido.
+			// Coloca o ID na entidade recebida.
 			entidade.setID(ultimoID);
 
 			byte[] bytesEntidade = entidade.toByteArray();
@@ -128,12 +133,14 @@ public class CRUD {
 		return ultimoID;
 	}
 
-	// Retorna o usuário com determinado ID, ou null caso o usuário não exista.
-	public Usuario read(int id) {
-		Usuario usuario = new Usuario();
+	// Retorna a entidade com determinado ID, ou null caso o usuário não exista.
+	public T read(int id) {
+		T entidade = null;
 
 		try {
-			// Buscar o endereço do registro do usuário no índice direto.
+			entidade = tConstructor.newInstance();
+
+			// Buscar o endereço do registro da entidade no índice direto.
 			// Retorna -1 no caso em que não encontrar.
 			long endereco = indiceDireto.read(id); 
 
@@ -146,28 +153,28 @@ public class CRUD {
 
 			if (lapide == 0) {
 				// Ler tamanho
-				short tamanhoUsuario = arquivo.readShort();
+				short tamanhoEntidade = arquivo.readShort();
 				
-				byte[] vetorUsuario = new byte[tamanhoUsuario];
+				byte[] vetorEntidade = new byte[tamanhoEntidade];
 				// Ler vetor de bytes
-				arquivo.read(vetorUsuario);
+				arquivo.read(vetorEntidade);
 
-				usuario.fromByteArray(vetorUsuario);
+				entidade.fromByteArray(vetorEntidade);
 			} else {
 				// Usuário foi deletado.
 				// Retornamos null.
-				usuario = null;
+				entidade = null;
 			}
 		} catch (Exception exception) {
 			reportarExcecao("Erro ao tentar ler entidade!", exception);
-			usuario = null;
+			entidade = null;
 		}
 
-		return usuario;
+		return entidade;
 	}
 
-	public Usuario read(String email) {
-		Usuario usuario = new Usuario();
+	public T read(String email) {
+		T entidade = null;
 
 		try {
 			// Busca o ID no índice indireto, usando o valor retornado pelo método
@@ -175,17 +182,17 @@ public class CRUD {
 			int id = indiceIndireto.read(email);
 
 			// Só invocamos o read que usa ID
-			usuario = read(id);
+			entidade = read(id);
 		} catch (IOException exception) {
 			reportarExcecao("Erro ao tentar ler entidade!", exception);
-			usuario = null;
+			entidade = null;
 		}
 
-		return usuario;
+		return entidade;
 	}
 
-	// Atualiza o usuário. Retorna true em caso de sucesso ou false em caso de falha.
-	public boolean update(Usuario entidade) {
+	// Atualiza a entidade. Retorna true em caso de sucesso ou false em caso de falha.
+	public boolean update(T entidade) {
 		boolean sucesso = true;
 
 		try {
@@ -257,13 +264,13 @@ public class CRUD {
 			byte[] registro = new byte[tamanhoRegistro];
 			arquivo.read(registro);
 
-			Usuario usuario = new Usuario(registro);
+			T entidade = tConstructor.newInstance(registro);
 
 			// Coloca registro na lista de registros vazios.
 			encadearRegistroVazio(endereco, tamanhoRegistro);
 
 			// Deletar a entrada do índice indireto usando chaveSecundária.
-			indiceIndireto.delete(usuario.chaveSecundaria());
+			indiceIndireto.delete(entidade.chaveSecundaria());
 			// Deletar a entrada do índice direto usando ID.
 			indiceDireto.delete(id);
 		} catch (Exception exception) {

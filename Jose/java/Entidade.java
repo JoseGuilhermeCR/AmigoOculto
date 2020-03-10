@@ -1,4 +1,6 @@
-public abstract class Entidade implements IEntidade {
+import java.io.IOException;
+
+public abstract class Entidade {
 
 	protected int id;
 
@@ -13,4 +15,9 @@ public abstract class Entidade implements IEntidade {
 	public int getID() {
 		return id;
 	}
+
+	abstract public String chaveSecundaria();
+
+	abstract public void fromByteArray(byte[] bytes) throws IOException;
+	abstract public byte[] toByteArray() throws IOException;
 }

@@ -36,13 +36,15 @@ class Resultado {
 public class AmigoOculto {
 
 	private CRUD<Usuario> crudUsuario;
+	private CRUD<Sugestao> crudSugestao;
+
 	private Scanner scanner;
 
 	public AmigoOculto() throws Exception {
 		scanner = new Scanner(System.in);
 
 		crudUsuario = new CRUD<>("user", Usuario.class.getConstructor());
-		Sugestao sug = new Sugestao();
+		crudSugestao = new CRUD<>("sugestao", Sugestao.class.getConstructor());
 	}
 
 	public Resultado run() {
@@ -57,13 +59,7 @@ public class AmigoOculto {
 			do {
 				limpaTela();
 
-				if (!resultado.valido()) {
-					System.out.println("ERRO: " + resultado.mensagem() + "\n");
-					resultado.limparMensagem();
-				} else {
-					System.out.println(resultado.mensagem() + "\n");
-					resultado.limparMensagem();
-				}
+				mostrarMensagemResultado(resultado);
 				
 				System.out.print(
 					"AMIGO OCULTO 1.0\n" +
@@ -165,7 +161,7 @@ public class AmigoOculto {
 				String senha = scanner.nextLine();
 
 				if (usuario.getSenha().equals(senha)) {
-					resultado.setSucesso("AindaNãoImplementada");
+					resultado = telaMenuPrincipal(usuario);
 				} else {
 					resultado.setErro("Senha incorreta.");	
 				}
@@ -179,7 +175,100 @@ public class AmigoOculto {
 		return resultado;
 	}
 
+	private Resultado telaMenuPrincipal(Usuario usuario) throws IOException, InterruptedException {
+		Resultado resultado = new Resultado();
+
+		// Talvez não seja uma boa ideia fazer esse tipo de uso para o resultado...
+		// Não foi pensado para se usar dessa maneira.
+		resultado.setSucesso("Bem-vindo " + usuario.getNome() + "!");
+
+		int opcao;
+		do {
+			limpaTela();
+
+			mostrarMensagemResultado(resultado);
+
+			System.out.print(
+				"AMIGO OCULTO 1.0\n" +
+				"================\n\n" +
+				"INÍCIO\n\n" +
+				"1) Sugestões de presentes\n" +
+				"2) Grupos\n" +
+				"3) Novos convites: 0\n\n" +
+				"0) Sair\n\n" +
+				"Opcão: "
+			);
+			opcao = scanner.nextInt();
+			scanner.nextLine();
+
+			switch (opcao) {
+				case 0:
+					resultado.setSucesso("Até mais " + usuario.getNome() + "!");
+					break;
+				case 1:
+					resultado = telaSugestoes(usuario);
+					break;
+				case 2:
+					break;
+				case 3:
+					break;
+				default:
+					resultado.setErro("Opção (" + opcao + ") inválida.");
+			}
+		} while (opcao != 0);
+
+		return resultado;
+	}
+
+	private Resultado telaSugestoes(Usuario usuario) throws IOException, InterruptedException {
+		Resultado resultado = new Resultado();
+
+		int opcao;
+		do {
+			limpaTela();
+
+			mostrarMensagemResultado(resultado);
+
+			System.out.print(
+				"AMIGO OCULTO 1.0\n" +
+				"================\n\n" +
+				"INÍCIO > SUGESTÕES\n\n" +
+				"1) Listar\n" +
+				"2) Incluir\n" +
+				"3) Alterar\n" +
+				"4) Excluir\n\n" +
+				"0) Retornar ao menu anterior\n\n" +
+				"Opção: "
+			);
+			opcao = scanner.nextInt();
+			scanner.nextLine();
+
+			switch (opcao) {
+				case 1:
+					break;
+				case 2:
+					break;
+				case 3:
+					break;
+				default:
+					resultado.setErro("Opção (" + opcao + ") inválida.");
+			}
+		} while (opcao != 0);
+
+		return resultado;
+	}
+
+	private void mostrarMensagemResultado(Resultado resultado) {
+		if (!resultado.valido()) {
+			System.out.println("ERRO: " + resultado.mensagem() + "\n");
+		} else {
+			System.out.println(resultado.mensagem() + "\n");
+		}
+		resultado.limparMensagem();
+	}
+
 	private void limpaTela() throws IOException, InterruptedException {
+		// Só funciona atualmente no Linux (caso o terminal esteja usando bash...)
 		new ProcessBuilder("bash", "-c", "clear").inheritIO().start().waitFor();
 	}
 

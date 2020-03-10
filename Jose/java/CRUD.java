@@ -264,7 +264,8 @@ public class CRUD<T extends Entidade> {
 			byte[] registro = new byte[tamanhoRegistro];
 			arquivo.read(registro);
 
-			T entidade = tConstructor.newInstance(registro);
+			T entidade = tConstructor.newInstance();
+			entidade.fromByteArray(registro);
 
 			// Coloca registro na lista de registros vazios.
 			encadearRegistroVazio(endereco, tamanhoRegistro);

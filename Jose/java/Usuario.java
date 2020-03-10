@@ -28,10 +28,6 @@ public class Usuario extends Entidade {
 		this.senha = senha;
 	}
 
-	public Usuario(byte[] array) throws IOException {
-		fromByteArray(array);
-	}
-
 	public void setNome(String nome) {
 		this.nome = nome;
 	}

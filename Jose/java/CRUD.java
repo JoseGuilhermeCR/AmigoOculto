@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
  * que 80% do tamanho do registro vazio, se sim, ele é desencadeado e usado, se não, o novo registro será escrito
  * no final do arquivo e a lista encadeada não sofre alteração. */
 
-public class CRUD<T extends Entidade> {
+public class CRUD<T extends IEntidade> {
 
 	private final String DIRETORIO = "dados";
 

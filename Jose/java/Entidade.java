@@ -1,9 +1,16 @@
-public interface Entidade {
-	public void setID(int id);
-	public int getID();
+public abstract class Entidade implements IEntidade {
 
-	public String chaveSecundaria();
+	protected int id;
 
-	public void fromByteArray(byte[] bytes);
-	public byte[] toByteArray();
+	public Entidade() {
+		this.id = 0;
+	}
+
+	public void setID(int id) {
+		this.id = id;
+	}
+
+	public int getID() {
+		return id;
+	}
 }

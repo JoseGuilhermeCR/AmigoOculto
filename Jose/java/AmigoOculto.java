@@ -42,6 +42,7 @@ public class AmigoOculto {
 		scanner = new Scanner(System.in);
 
 		crudUsuario = new CRUD<>("user", Usuario.class.getConstructor());
+		Sugestao sug = new Sugestao();
 	}
 
 	public Resultado run() {

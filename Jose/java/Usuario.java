@@ -5,22 +5,23 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class Usuario implements Entidade {
-
-	private int id;
+public class Usuario extends Entidade {
 
 	private String nome;
 	private String email;
 	private String senha;
 
 	public Usuario() {
-		this.id = 0;
+		super();
+
 		this.nome = new String();
 		this.email = new String();
 		this.senha = new String();
 	}
 
 	public Usuario(int id, String nome, String email, String senha) {
+		super();
+
 		this.id = id;
 		this.nome = nome;
 		this.email = email;
@@ -29,10 +30,6 @@ public class Usuario implements Entidade {
 
 	public Usuario(byte[] array) throws IOException {
 		fromByteArray(array);
-	}
-
-	public void setID(int id) {
-		this.id = id;
 	}
 
 	public void setNome(String nome) {
@@ -55,10 +52,6 @@ public class Usuario implements Entidade {
 		nome = byteStreamInput.readUTF();
 		email = byteStreamInput.readUTF();
 		senha = byteStreamInput.readUTF();
-	}
-
-	public int getID() {
-		return id;
 	}
 
 	public String getNome() {

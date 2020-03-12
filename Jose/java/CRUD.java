@@ -111,7 +111,7 @@ public class CRUD<T extends Entidade> {
 
 			// Se é no final, temos que escrever o tamanho, se não, deixamos o tamanho do registro original.
 			if (escreverNoFinal) {
-				arquivo.writeShort(bytesEntidade.length);
+				arquivo.writeShort(tamanhoEntidade);
 			} else {
 				// Também é necessário desencadear esse registro da lista antes de utilizá-lo.
 				desencadearRegistroVazio(endereco);

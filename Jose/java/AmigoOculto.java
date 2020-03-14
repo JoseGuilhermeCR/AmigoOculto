@@ -58,41 +58,37 @@ public class AmigoOculto {
 	private Resultado telaAcesso() {
 		Resultado resultado =  new Resultado();
 
-		try {
-			int opcao;
-			do {
-				limpaTela();
+		int opcao;
+		do {
+			limpaTela();
 
-				mostrarMensagemResultado(resultado);
+			mostrarMensagemResultado(resultado);
 				
-				System.out.print(
-					"AMIGO OCULTO 1.0\n" +
-					"================\n\n" +
-					"ACESSO\n\n" +
-					"1) Acesso ao sistema\n" +
-					"2) Novo usuário (primeiro acesso)\n\n" +
-					"Opção: "
-				);
-				opcao = scanner.nextInt();
-				scanner.nextLine();
+			System.out.print(
+				"AMIGO OCULTO 1.0\n" +
+				"================\n\n" +
+				"ACESSO\n\n" +
+				"1) Acesso ao sistema\n" +
+				"2) Novo usuário (primeiro acesso)\n\n" +
+				"Opção: "
+			);
+			opcao = scanner.nextInt();
+			scanner.nextLine();
 
-				switch (opcao) {
-					case 1:
-						resultado = telaAcessoJaCadastrado();
-						break;
-					case 2:
-						resultado = telaPrimeiroAcesso();
-						break;
-				}
-			} while (opcao > 0 && opcao <= 2);
-		} catch (Exception exception) {
-			resultado.setErro(exception.getMessage());
-		}
+			switch (opcao) {
+				case 1:
+					resultado = telaAcessoJaCadastrado();
+					break;
+				case 2:
+					resultado = telaPrimeiroAcesso();
+					break;
+			}
+		} while (opcao > 0 && opcao <= 2);
 
 		return resultado;
 	}
 
-	private Resultado telaPrimeiroAcesso() throws IOException, InterruptedException {
+	private Resultado telaPrimeiroAcesso() {
 		Resultado resultado = new Resultado();
 
 		limpaTela();
@@ -145,7 +141,7 @@ public class AmigoOculto {
 		return resultado;
 	}
 
-	private Resultado telaAcessoJaCadastrado() throws IOException, InterruptedException {
+	private Resultado telaAcessoJaCadastrado() {
 		Resultado resultado = new Resultado();
 
 		limpaTela();
@@ -179,7 +175,7 @@ public class AmigoOculto {
 		return resultado;
 	}
 
-	private Resultado telaMenuPrincipal(Usuario usuario) throws IOException, InterruptedException {
+	private Resultado telaMenuPrincipal(Usuario usuario) {
 		Resultado resultado = new Resultado();
 
 		// Talvez não seja uma boa ideia fazer esse tipo de uso para o resultado...
@@ -224,7 +220,7 @@ public class AmigoOculto {
 		return resultado;
 	}
 
-	private Resultado telaSugestoes(Usuario usuario) throws IOException, InterruptedException {
+	private Resultado telaSugestoes(Usuario usuario) {
 		Resultado resultado = new Resultado();
 
 		int opcao;
@@ -274,11 +270,16 @@ public class AmigoOculto {
 		resultado.limparMensagem();
 	}
 
-	private void limpaTela() throws IOException, InterruptedException {
-		// Equivalente em Linux usando BASH
-		// new ProcessBuilder("bash", "-c", "clear").inheritIO().start().waitFor();
-		// Windows
-		new ProcessBuilder("cmd", "/C", "cls").inheritIO().start().waitFor();
+	private void limpaTela() {
+		try {
+			// Equivalente em Linux usando BASH
+			// new ProcessBuilder("bash", "-c", "clear").inheritIO().start().waitFor();
+			// Windows
+			new ProcessBuilder("cmd", "/C", "cls").inheritIO().start().waitFor();
+		} catch (Exception exception) {
+			// Talvez escrever no arquivo de log?
+			exception.printStackTrace();
+		}
 	}
 
 	public static void main(String[] args) {

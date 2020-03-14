@@ -227,7 +227,7 @@ public class CRUD<T extends Entidade> {
 				endereco = arquivo.getFilePointer();
 				// Escreve novo campo
 				arquivo.writeByte(0);
-				arquivo.writeShort(bytesEntidadeAtualizada.length);
+				arquivo.writeShort(novoTamanho);
 				arquivo.write(bytesEntidadeAtualizada);
 				// Atualiza índice direto. (Mudança de endereço).
 				indiceDireto.update(entidade.getID(), endereco);

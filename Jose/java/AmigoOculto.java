@@ -42,6 +42,9 @@ public class AmigoOculto {
 	private CRUD<Usuario> crudUsuario;
 	private CRUD<Sugestao> crudSugestao;
 
+	// Tentar abstrair e tirar essa classe daqui. Na teoria só o programa principal ficaria aqui...
+	private ArvoreBMais_Int_Int arvoreUsuarioSugestao;
+
 	private Scanner scanner;
 
 	public AmigoOculto() throws Exception {
@@ -49,6 +52,8 @@ public class AmigoOculto {
 
 		crudUsuario = new CRUD<>("user", Usuario.class.getConstructor());
 		crudSugestao = new CRUD<>("sugestao", Sugestao.class.getConstructor());
+
+		arvoreUsuarioSugestao = new ArvoreBMais_Int_Int(10, "dados/arvoreB.usuarioSugestao.idx");
 	}
 
 	public Resultado run() {
@@ -112,21 +117,16 @@ public class AmigoOculto {
 				String senha = scanner.nextLine();
 
 				if (!nome.isBlank() && !senha.isBlank()) {
-					System.out.print(
-						"Completar cadastro? (sim/não): "
-					);
-					String completarCadastro = scanner.nextLine();
-
-					if (completarCadastro.toLowerCase().equals("sim")) {
-						int idInserido = crudUsuario.create(new Usuario(0, nome, email, senha));
+					if (confirmar("Completar cadastro?")) {
+						int idInserido = crudUsuario.create(new Usuario(nome, email, senha));
 
 						if (idInserido != -1) {
 							resultado.setSucesso("Cadastro realizado com sucesso.");
 						} else {
-							resultado.setErro("Ocorreu um erro durante o cadastro");
+							resultado.setErro("Ocorreu um erro durante o cadastro.");
 						}
 					} else {
-						resultado.setErro("Cadastro cancelado.");
+						resultado.setSucesso("Cadastro cancelado.");
 					}
 				} else {
 					resultado.setErro("O nome ou senha digitados não são válidos.");
@@ -160,7 +160,7 @@ public class AmigoOculto {
 				);
 				String senha = scanner.nextLine();
 
-				if (usuario.getSenha().equals(senha)) {
+				if (usuario.validarSenha(senha)) {
 					resultado = telaMenuPrincipal(usuario);
 				} else {
 					resultado.setErro("Senha incorreta.");	
@@ -248,10 +248,16 @@ public class AmigoOculto {
 					resultado.setSucesso("SUGESTÕES > INÍCIO");
 					break;
 				case 1:
+					resultado = telaListarSugestoes(usuario);
 					break;
 				case 2:
+					resultado = telaIncluirSugestao(usuario);
 					break;
 				case 3:
+					resultado = telaAlterarSugestoes(usuario);
+					break;
+				case 4:
+					resultado = telaExcluirSugestao(usuario);
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");
@@ -259,6 +265,213 @@ public class AmigoOculto {
 		} while (opcao != 0);
 
 		return resultado;
+	}
+
+	private Resultado telaListarSugestoes(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		Sugestao sugestoes[] = listarSugestoes(usuario, resultado);
+
+		if (sugestoes != null && sugestoes.length != 0) {
+			limpaTela();
+			System.out.println("MINHAS SUGESTÕES\n");
+
+			int contador = 1;
+			for (Sugestao sugestao : sugestoes) {
+				// Caso o CRUD não ache a sugestão com esse ID, será retornado null.
+				if (sugestao != null) {
+					System.out.print(contador + ".");
+					sugestao.prettyPrint();
+					System.out.println();
+				}
+				contador++;	
+			}
+
+			System.out.println("Pressione qualquer tecla para continuar...");
+			scanner.nextLine();
+		} else {
+			resultado.setErro("Você não tem nenhuma sugestão.");
+		}
+
+		return resultado;
+	}
+
+	private Resultado telaIncluirSugestao(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		limpaTela();
+		System.out.print(
+			"INCLUIR SUGESTÃO\n\n" +
+			"Nome do produto: "
+		);
+		String nomeProduto = scanner.nextLine();
+
+		if (!nomeProduto.isBlank()) {
+			System.out.print(
+				"Loja (opcional): "
+			);
+			String loja = scanner.nextLine();
+
+			// Pega-se o valor como se fosse uma String para que seja possível omitir.
+			System.out.print(
+				"Valor (opcional): "
+			);
+			String valorStr = scanner.nextLine();
+
+			float valor;
+			try {
+				valor = Float.parseFloat(valorStr);
+			} catch (Exception e) {
+				valor = Float.NaN;
+			}
+
+			System.out.print(
+				"Observações (opcional): "
+			);
+			String observacoes = scanner.nextLine();
+
+			if (confirmar("Completar inclusão?")) {
+				int idInserido = crudSugestao.create(new Sugestao(nomeProduto, valor, loja, observacoes));
+
+				if (idInserido != -1) {
+
+					try {
+						arvoreUsuarioSugestao.create(usuario.getID(), idInserido);
+					} catch (IOException exception) {
+						resultado.setErro("Ocorreu um erro durante a inclusão.");
+					}
+
+					resultado.setSucesso("Inclusão realizada com sucesso.");
+				} else {
+					resultado.setErro("Ocorreu um erro durante a inclusão.");
+				}
+			} else {
+				resultado.setSucesso("Inclusão cancelada.");	
+			}
+		} else {
+			resultado.setErro("O nome do produto não pode estar vazio.");
+		}
+
+		return resultado;
+	}
+
+	private Resultado telaAlterarSugestoes(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		limpaTela();
+
+		// Primeiro, lista as sugestões do usuário.
+		resultado = telaListarSugestoes(usuario);
+		Sugestao sugestoes[] = listarSugestoes(usuario, resultado);
+
+		if (sugestoes != null && sugestoes.length != 0) {
+			System.out.print(
+				"Quais sugestões você quer alterar? (0 para sair ou [1, 2, ...]): "
+			);
+			String indicesSugestoesAAlterar[] = scanner.nextLine().replace(" ", "").split(",");
+
+			for (String str : indicesSugestoesAAlterar) {
+				int indiceSugestao = Integer.parseInt(str) - 1;
+
+				// Se a sugestão for válida (estiver na lista apresentada anteriormente).
+				if (indiceSugestao >= 0 && indiceSugestao < sugestoes.length) {
+					Sugestao sugestao = sugestoes[indiceSugestao];
+
+					if (sugestao != null) {
+						limpaTela();
+
+						System.out.println("ALTERANDO SUGESTÃO " + str + "\n");
+						sugestao.prettyPrint();
+						System.out.println();
+
+						// Lê as alterações dos campos.
+						Sugestao novaSugestao = sugestao.lerNovaSugestao(scanner);
+
+						// Se houver alterações.
+						if (!novaSugestao.equals(sugestao)) {
+							if (confirmar("Confirmar alteração?")) {
+								crudSugestao.update(novaSugestao);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return resultado;
+	}
+
+	private Resultado telaExcluirSugestao(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		limpaTela();
+
+		resultado = telaListarSugestoes(usuario);
+		Sugestao sugestoes[] = listarSugestoes(usuario, resultado);
+
+		if (sugestoes != null) {
+			System.out.print(
+					"Quais sugestões você quer deletar? (0 para sair ou [1, 2, ...]): "
+			);
+			String indicesSugestoesADeletar[] = scanner.nextLine().replace(" ", "").split(",");
+			
+			for (String str : indicesSugestoesADeletar) {
+				int indiceSugestao = Integer.parseInt(str) - 1;
+
+				// Se a sugestão for válida (estiver na lista apresentada anteriormente).
+				if (indiceSugestao >= 0 && indiceSugestao < sugestoes.length) {
+					Sugestao sugestao = sugestoes[indiceSugestao];
+
+					if (sugestao != null) {
+						limpaTela();
+
+						System.out.println("EXCLUINDO SUGESTÃO " + str + "\n");
+						sugestao.prettyPrint();
+						System.out.println();
+
+						if (confirmar("Confirmar exclusão?")) {
+							crudSugestao.delete(sugestao.getID());
+
+							try { 
+								arvoreUsuarioSugestao.delete(usuario.getID(), sugestao.getID());
+							} catch (Exception e) {
+								resultado.setErro("Ocorreu um erro durante a exclusão.");
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return resultado;
+	}
+
+	private Sugestao[] listarSugestoes(Usuario usuario, Resultado resultado) {
+		Sugestao sugestoes[];
+
+		try {
+			// Lê todas sugestões desse usuário.
+			int idsSugestoes[] = arvoreUsuarioSugestao.read(usuario.getID());
+			sugestoes = new Sugestao[idsSugestoes.length];
+
+			// As lê e coloca no vetor de sugestões.
+			int contador = 0;
+			for (int id : idsSugestoes) {
+				sugestoes[contador++] = crudSugestao.read(id);
+			}
+		} catch (Exception exception) {
+			resultado.setErro("Ocorreu um erro ao tentar ler as suas sugestões.");
+			sugestoes = null;
+		}
+
+		return sugestoes;
+	}
+
+	private boolean confirmar(String mensagem) {
+		System.out.print(mensagem + " (sim/não): ");
+		String confirmacao = scanner.nextLine();
+
+		return (confirmacao.toLowerCase().equals("sim"));
 	}
 
 	private void mostrarMensagemResultado(Resultado resultado) {

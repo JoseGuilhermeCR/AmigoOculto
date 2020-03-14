@@ -19,10 +19,9 @@ public class Usuario extends Entidade {
 		this.senha = new String();
 	}
 
-	public Usuario(int id, String nome, String email, String senha) {
+	public Usuario(String nome, String email, String senha) {
 		super();
 
-		this.id = id;
 		this.nome = nome;
 		this.email = email;
 		this.senha = senha;
@@ -80,5 +79,9 @@ public class Usuario extends Entidade {
 
 	public String chaveSecundaria() {
 		return email;
+	}
+
+	public boolean validarSenha(String senha) {
+		return this.senha.equals(senha);
 	}
 }

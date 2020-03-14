@@ -53,12 +53,14 @@ public class CRUD<T extends Entidade> {
 
 		indiceDireto = new HashExtensivel(
 				10,
-			       	DIRETORIO + "/diretorio." + nomeArquivo + ".idx",
-				DIRETORIO + "/cestos." + nomeArquivo + ".idx");
+			    DIRETORIO + "/diretorio." + nomeArquivo + ".idx",
+				DIRETORIO + "/cestos." + nomeArquivo + ".idx"
+		);
 
 		indiceIndireto = new ArvoreBMais_String_Int(
 				10,
-				DIRETORIO + "/arvoreB." + nomeArquivo + ".idx");
+				DIRETORIO + "/arvoreB." + nomeArquivo + ".idx"
+		);
 	}
 
 	// Retorna o id do usuário adicionado, ou -1 em caso de erro.
@@ -287,14 +289,14 @@ public class CRUD<T extends Entidade> {
 		long registro = fetchPrimeiroRegistroVazio();
 		// Se o cabeçalho não aponta pra nenhum registro vazio, a lista está vazia.
 		if (registro == -1) {
-			System.out.println("Cabeçalho aponta para registro -1.");
+			//System.out.println("Cabeçalho aponta para registro -1.");
 			setPrimeiroRegistroVazio(enderecoRegistro);
 			// Pula a lápide e o tamanho do registro.
 			arquivo.seek(enderecoRegistro + 3);
 			// Escreve o endereço do pŕoximo registro vazio.
 			arquivo.writeLong(-1);
 		} else {
-			System.out.println("Cabeçalho aponta para: " + String.format("0x%08X", registro));
+			//System.out.println("Cabeçalho aponta para: " + String.format("0x%08X", registro));
 			// Vai para o primeiro registro e pega seu tamanho.
 			arquivo.seek(registro + 1); // Pula lápide.
 			// Lê o tamanho dele.
@@ -302,14 +304,14 @@ public class CRUD<T extends Entidade> {
 
 			// O nosso registro é menor do que o primeiro registro.
 			if (tamanhoRegistro < tamanhoApontado) {
-				System.out.println("Nosso registro é menor que o primeiro registro.");
+				//System.out.println("Nosso registro é menor que o primeiro registro.");
 				// O cabeçalho aponta para o registro sendo adicionado.
 				setPrimeiroRegistroVazio(enderecoRegistro);
 				// O nosso registro aponta para o, já não mais, primeiro registro.
 				arquivo.seek(enderecoRegistro + 3); // Pula lápide e tamanho.
 				arquivo.writeLong(registro);
 			} else { // É maior do que o primeiro registro.
-				System.out.println("Nosso registro NÃO é menor que o primeiro registro.");
+				//System.out.println("Nosso registro NÃO é menor que o primeiro registro.");
 				// registroAnterior é o primeiro registro.
 				long registroAnterior = registro;
 				// registro é o próximo registro. 
@@ -325,12 +327,12 @@ public class CRUD<T extends Entidade> {
 				}
 
 				// Saindo do loop, registro anterior é o registro que apontará para o registro sendo encadeado.
-				System.out.println("Registro anterior ( " + String.format("0x%08X", registroAnterior) + ") apontará para: " + String.format("0x%08X", enderecoRegistro));
+				//System.out.println("Registro anterior ( " + String.format("0x%08X", registroAnterior) + ") apontará para: " + String.format("0x%08X", enderecoRegistro));
 				arquivo.seek(registroAnterior + 3); // Pula lápide e o tamanho do registro.
 				arquivo.writeLong(enderecoRegistro);
 
 				// O nosso registro, deve apontar para o endereço que está em registro.
-				System.out.println("Nosso registro ( " + String.format("0x%08X", enderecoRegistro) + ") apontará para: " + String.format("0x%08X", registro));
+				//System.out.println("Nosso registro ( " + String.format("0x%08X", enderecoRegistro) + ") apontará para: " + String.format("0x%08X", registro));
 				arquivo.seek(enderecoRegistro + 3); // Pula lápide e o tamanho do registro.
 				arquivo.writeLong(registro);
 			}
@@ -349,12 +351,12 @@ public class CRUD<T extends Entidade> {
 			registroAnterior = registro;
 			registro = arquivo.readLong();
 		}
-		System.out.println("Registro que será desencadeado está sendo apontando por " + String.format("0x%08X", registroAnterior));
+		//System.out.println("Registro que será desencadeado está sendo apontando por " + String.format("0x%08X", registroAnterior));
 
 		// Vai no registro que será desencadeado e pega o endereço apontado por ele.
 		arquivo.seek(enderecoRegistro + 3);
 		long proximoRegistro = arquivo.readLong();
-		System.out.println("Registro que será desencadeado está apontando para " + String.format("0x%08X", proximoRegistro));
+		//System.out.println("Registro que será desencadeado está apontando para " + String.format("0x%08X", proximoRegistro));
 
 		// Caso o registro anterior não continue sendo o cabeçalho, temos que ir para ele e pular a lápide + tamanho.
 		// Se continuar sendo o cabeçalho, só fazemos um seek para a posição correta  (não aplicamos o offset).

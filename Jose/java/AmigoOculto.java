@@ -33,6 +33,10 @@ class Resultado {
 	}
 }
 
+// TODO: Por enquanto, acentos apresentam problema no Windows.
+// Quando compilar, é preciso usar -encoding utf-8.
+// Quando executar, os caracteres apresentam problema mesmo com chcp 65001 no terminal.
+
 public class AmigoOculto {
 
 	private CRUD<Usuario> crudUsuario;
@@ -244,6 +248,9 @@ public class AmigoOculto {
 			scanner.nextLine();
 
 			switch (opcao) {
+				case 0:
+					resultado.setSucesso("SUGESTÕES > INÍCIO");
+					break;
 				case 1:
 					break;
 				case 2:
@@ -268,8 +275,10 @@ public class AmigoOculto {
 	}
 
 	private void limpaTela() throws IOException, InterruptedException {
-		// Só funciona atualmente no Linux (caso o terminal esteja usando bash...)
-		new ProcessBuilder("bash", "-c", "clear").inheritIO().start().waitFor();
+		// Equivalente em Linux usando BASH
+		// new ProcessBuilder("bash", "-c", "clear").inheritIO().start().waitFor();
+		// Windows
+		new ProcessBuilder("cmd", "/C", "cls").inheritIO().start().waitFor();
 	}
 
 	public static void main(String[] args) {

@@ -1,3 +1,5 @@
+/* José Guilherme de Castro Rodrigues 2020 */
+
 package entidades;
 
 import java.io.ByteArrayInputStream;
@@ -46,7 +48,7 @@ public class Grupo extends Entidade {
         id = byteStreamInput.readInt();
         idUsuario = byteStreamInput.readInt();
         nome = byteStreamInput.readUTF();
-		valor = byteStreamInput.readFloat();
+	valor = byteStreamInput.readFloat();
         momentoSorteio = byteStreamInput.readLong();
         momentoEncontro = byteStreamInput.readLong();
         localEncontro = byteStreamInput.readUTF();

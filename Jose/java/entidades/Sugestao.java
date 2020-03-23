@@ -7,7 +7,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.Scanner;
 
 public class Sugestao extends Entidade {
 	
@@ -135,48 +134,5 @@ public class Sugestao extends Entidade {
 			loja.equals(outra.getLoja()) &&
 			observacoes.equals(outra.getObservacoes())
 		);
-	}
-
-	// Lê uma nova sugestão que funcionará para alteração.
-	public Sugestao lerNovaSugestao(Scanner scanner) {
-		// Lê as alterações dos campos.
-		System.out.println("O campo deixado em branco não será alterado.");
-		System.out.print(
-			"Novo nome do produto: "
-		);
-		String novoNome = scanner.nextLine();
-
-		System.out.print(
-			"Nova loja: "
-		);
-		String novaLoja = scanner.nextLine();
-
-		System.out.print(
-			"Novo valor: "
-		);
-		String novoValorStr = scanner.nextLine();
-
-		float novoValor;
-		try {
-			novoValor = Float.parseFloat(novoValorStr);
-		} catch (Exception e) {
-			novoValor = Float.NaN;
-		}
-
-		System.out.print(
-			"Novas observações: "
-		);
-		String novasObservacoes = scanner.nextLine();
-
-		Sugestao novaSugestao = new Sugestao(
-								(novoNome.isBlank()) ? produto : novoNome,
-								(Float.isNaN(novoValor)) ? valor : novoValor,
-								(novaLoja.isBlank()) ? loja : novaLoja,
-								(novasObservacoes.isBlank()) ? observacoes : novasObservacoes
-		);
-		novaSugestao.setID(id);
-		novaSugestao.setIDUsuario(idUsuario);
-
-		return novaSugestao;
 	}
 }

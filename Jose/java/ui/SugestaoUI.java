@@ -186,7 +186,7 @@ public class SugestaoUI {
 						System.out.println();
 
 						// Lê as alterações dos campos.
-						Sugestao novaSugestao = sugestao.lerNovaSugestao(Utils.scanner);
+						Sugestao novaSugestao = lerNovaSugestao(sugestao);
 
 						// Se houver alterações.
 						if (!novaSugestao.equals(sugestao)) {
@@ -245,6 +245,49 @@ public class SugestaoUI {
 		}
 
 		return resultado;
+	}
+
+	// Lê uma nova sugestão que funcionará para alteração.
+	public Sugestao lerNovaSugestao(Sugestao sugestao) {
+		// Lê as alterações dos campos.
+		System.out.println("O campo deixado em branco não será alterado.");
+		System.out.print(
+			"Novo nome do produto: "
+		);
+		String novoNome = Utils.scanner.nextLine();
+
+		System.out.print(
+			"Nova loja: "
+		);
+		String novaLoja = Utils.scanner.nextLine();
+
+		System.out.print(
+			"Novo valor: "
+		);
+		String novoValorStr = Utils.scanner.nextLine();
+
+		float novoValor;
+		try {
+			novoValor = Float.parseFloat(novoValorStr);
+		} catch (Exception e) {
+			novoValor = Float.NaN;
+		}
+
+		System.out.print(
+			"Novas observações: "
+		);
+		String novasObservacoes = Utils.scanner.nextLine();
+
+		Sugestao novaSugestao = new Sugestao(
+			(novoNome.isBlank()) ? sugestao.getProduto() : novoNome,
+			(Float.isNaN(novoValor)) ? sugestao.getValor() : novoValor,
+			(novaLoja.isBlank()) ? sugestao.getLoja() : novaLoja,
+			(novasObservacoes.isBlank()) ? sugestao.getObservacoes() : novasObservacoes
+		);
+		novaSugestao.setID(sugestao.getID());
+		novaSugestao.setIDUsuario(sugestao.getIDUsuario());
+
+		return novaSugestao;
 	}
 
 	private Sugestao[] listarSugestoes(Usuario usuario, Resultado resultado) {

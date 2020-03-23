@@ -71,9 +71,10 @@ public class SugestaoUI {
 	private Resultado telaListarSugestoes(Usuario usuario) {
 		Resultado resultado = new Resultado();
 
-		Sugestao sugestoes[] = listarSugestoes(usuario, resultado);
-
-		if (sugestoes != null && sugestoes.length != 0) {
+		resultado = listarSugestoes(usuario);
+		Sugestao sugestoes[] = (Sugestao[]) resultado.getObjeto();
+		
+		if (resultado.valido() && sugestoes != null && sugestoes.length != 0) {
 			Utils.limpaTela();
 			System.out.println("MINHAS SUGESTÕES\n");
 
@@ -114,19 +115,8 @@ public class SugestaoUI {
 				"Loja (opcional): "
 			);
 			String loja = Utils.scanner.nextLine();
-
-			// Pega-se o valor como se fosse uma String para que seja possível omitir.
-			System.out.print(
-				"Valor (opcional): "
-			);
-			String valorStr = Utils.scanner.nextLine();
-
-			float valor;
-			try {
-				valor = Float.parseFloat(valorStr);
-			} catch (Exception e) {
-				valor = Float.NaN;
-			}
+			
+			float valor = Utils.readFloatOpcional("Valor (opcional): ");
 
 			System.out.print(
 				"Observações (opcional): "
@@ -134,7 +124,8 @@ public class SugestaoUI {
 			String observacoes = Utils.scanner.nextLine();
 
 			if (Utils.confirmar("Completar inclusão?")) {
-				int idInserido = crudSugestao.create(new Sugestao(nomeProduto, valor, loja, observacoes));
+				int idInserido = crudSugestao.create(new Sugestao(usuario.getID(), nomeProduto, valor,
+											loja, observacoes));
 
 				if (idInserido != -1) {
 					try {
@@ -262,17 +253,7 @@ public class SugestaoUI {
 		);
 		String novaLoja = Utils.scanner.nextLine();
 
-		System.out.print(
-			"Novo valor: "
-		);
-		String novoValorStr = Utils.scanner.nextLine();
-
-		float novoValor;
-		try {
-			novoValor = Float.parseFloat(novoValorStr);
-		} catch (Exception e) {
-			novoValor = Float.NaN;
-		}
+		float novoValor = Utils.readFloatOpcional("Novo valor: ");
 
 		System.out.print(
 			"Novas observações: "
@@ -280,35 +261,37 @@ public class SugestaoUI {
 		String novasObservacoes = Utils.scanner.nextLine();
 
 		Sugestao novaSugestao = new Sugestao(
+			sugestao.getIDUsuario(),
 			(novoNome.isBlank()) ? sugestao.getProduto() : novoNome,
 			(Float.isNaN(novoValor)) ? sugestao.getValor() : novoValor,
 			(novaLoja.isBlank()) ? sugestao.getLoja() : novaLoja,
 			(novasObservacoes.isBlank()) ? sugestao.getObservacoes() : novasObservacoes
 		);
 		novaSugestao.setID(sugestao.getID());
-		novaSugestao.setIDUsuario(sugestao.getIDUsuario());
 
 		return novaSugestao;
 	}
 
-	private Sugestao[] listarSugestoes(Usuario usuario, Resultado resultado) {
-		Sugestao sugestoes[];
+	// TODO: Talvez transformar em uma função genérica.
+	private Resultado listarSugestoes(Usuario usuario) {
+		Resultado resultado = new Resultado();
 
 		try {
 			// Lê todas sugestões desse usuário.
 			int idsSugestoes[] = arvoreUsuarioSugestao.read(usuario.getID());
-			sugestoes = new Sugestao[idsSugestoes.length];
+			Sugestao sugestoes[] = new Sugestao[idsSugestoes.length];
 
 			// As lê e coloca no vetor de sugestões.
 			int contador = 0;
 			for (int id : idsSugestoes) {
 				sugestoes[contador++] = crudSugestao.read(id);
 			}
+
+			resultado.setObjeto(sugestoes);
 		} catch (Exception exception) {
 			resultado.setErro("Ocorreu um erro ao tentar ler as suas sugestões.");
-			sugestoes = null;
 		}
 
-		return sugestoes;
+		return resultado;
 	}
 }

@@ -29,6 +29,7 @@ public class AmigoOculto {
 			new AmigoOculto().run();
 		} catch (Exception exception) {
 			System.err.println("Um erro ocorreu durante a inicialização do programa.");
+			exception.printStackTrace();
 		}
 	}
 }

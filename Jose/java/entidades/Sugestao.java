@@ -30,9 +30,10 @@ public class Sugestao extends Entidade {
 		this.observacoes = new String();
 	}
 
-	public Sugestao(String produto, float valor, String loja, String observacoes) {
+	public Sugestao(int idUsuario, String produto, float valor, String loja, String observacoes) {
 		super();
 
+		this.idUsuario = idUsuario;
 		this.produto = produto;
 		this.valor  = valor;
 		this.loja = loja;

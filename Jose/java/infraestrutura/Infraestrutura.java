@@ -11,6 +11,7 @@ public class Infraestrutura {
 	private CRUD<Grupo> crudGrupo;
 
 	private ArvoreBMais_Int_Int arvoreUsuarioSugestao;
+	private ArvoreBMais_Int_Int arvoreUsuarioGrupo;
 
 	public Infraestrutura() throws Exception {
 		crudUsuario = new CRUD<>("user", Usuario.class.getConstructor());
@@ -18,6 +19,7 @@ public class Infraestrutura {
 		crudGrupo = new CRUD<>("grupo", Grupo.class.getConstructor());
 
 		arvoreUsuarioSugestao = new ArvoreBMais_Int_Int(10, "dados/arvoreB.usuarioSugestao.idx");
+		arvoreUsuarioGrupo = new ArvoreBMais_Int_Int(10, "dados/arvoreB.usuarioGrupo.idx");
 	}
 
 	public CRUD<Usuario> getCrudUsuario() {
@@ -34,5 +36,9 @@ public class Infraestrutura {
 
 	public ArvoreBMais_Int_Int getArvoreUsuarioSugestao() {
 		return arvoreUsuarioSugestao;
+	}
+
+	public ArvoreBMais_Int_Int getArvoreUsuarioGrupo() {
+		return arvoreUsuarioGrupo;
 	}
 }

@@ -2,6 +2,9 @@
 
 package utils;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Scanner;
 import ui.Resultado;
 
@@ -9,11 +12,48 @@ public class Utils {
 
 	public static Scanner scanner = new Scanner(System.in);
 
+	/* Lê a data com o formato indicado. Caso seja vazio, usa o formato padrão dd/MM/yyyy. 
+	 * Caso aconteça algum erro na conversão, retorna null. */
+	public static Date readData(String format) {
+		if (format.isBlank()) {
+			format = "dd/MM/yyyy";
+		}
+
+		String data = scanner.nextLine();
+
+		SimpleDateFormat formatter = new SimpleDateFormat(format);
+
+		Date parsedData;
+		try {
+			parsedData = (Date) formatter.parse(data);
+		} catch (ParseException pe) {
+			parsedData = null;
+		}
+
+		return parsedData;
+	}
+
 	public static int readInt() {
 		int i = scanner.nextInt();
 		scanner.nextLine(); // limpa buffer
 
 		return i;
+	}
+
+	/* Retorna o valor ou NaN caso não tenha sido digitado o float opcional. */
+	public static float readFloatOpcional(String mensagem) {
+		// Pega-se o valor como se fosse uma String para que seja possível omitir.
+		System.out.print(mensagem);
+		String valorStr = Utils.scanner.nextLine();
+
+		float valor;
+		try {
+			valor = Float.parseFloat(valorStr);
+		} catch (Exception e) {
+			valor = Float.NaN;
+		}
+
+		return valor;
 	}
 	
 	public static boolean confirmar(String mensagem) {

@@ -3,15 +3,20 @@
 package ui;
 
 import utils.Utils;
+
+import java.io.IOException;
+
 import entidades.Usuario;
 import infraestrutura.Infraestrutura;
 
 public class MenuUI {
 
 	private SugestaoUI sugestaoUI;
+	private GrupoUI grupoUI;
 
 	public MenuUI(Infraestrutura infraestrutura) {
 		sugestaoUI = new SugestaoUI(infraestrutura);
+		grupoUI = new GrupoUI(infraestrutura);
 	}
 
 	public Resultado telaMenuPrincipal(Usuario usuario) {
@@ -21,7 +26,7 @@ public class MenuUI {
 		// Não foi pensado para se usar dessa maneira.
 		resultado.setSucesso("Bem-vindo " + usuario.getNome() + "!");
 
-		int opcao;
+		int opcao = 0;
 		do {
 			Utils.limpaTela();
 
@@ -37,7 +42,7 @@ public class MenuUI {
 				"0) Sair\n\n" +
 				"Opcão: "
 			);
-			opcao = Utils.readInt();
+			opcao = Utils.readInt();			
 
 			switch (opcao) {
 				case 0:
@@ -47,6 +52,7 @@ public class MenuUI {
 					resultado = sugestaoUI.telaSugestoes(usuario);
 					break;
 				case 2:
+					resultado = grupoUI.telaPrincipalGrupos(usuario);
 					break;
 				case 3:
 					break;

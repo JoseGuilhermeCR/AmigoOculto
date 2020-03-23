@@ -7,6 +7,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import utils.Utils;
 
 public class Grupo extends Entidade {
@@ -36,6 +40,23 @@ public class Grupo extends Entidade {
 		valor = 0.0f;
 		momentoEncontro = 0;
 		momentoSorteio = 0;
+
+		sorteado = false;
+		ativo = true;
+	}
+
+	public Grupo(int idUsuario, String nome, float valor, long momentoSorteio, long momentoEncontro,
+		String localEncontro, String observacoes)
+	{
+		super();
+
+		this.idUsuario = idUsuario;
+		this.nome = nome;
+		this.valor = valor;
+		this.momentoSorteio = momentoSorteio;
+		this.momentoEncontro = momentoEncontro;
+		this.localEncontro = localEncontro;
+		this.observacoes = observacoes;
 
 		sorteado = false;
 		ativo = true;
@@ -83,6 +104,11 @@ public class Grupo extends Entidade {
 
 	public String chaveSecundaria() {
 		return idUsuario + "|" + nome;
+	}
+
+	public void prettyPrint() {
+		String stringEncontro = new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date(momentoEncontro));
+		System.out.println("\t" + nome + " " + stringEncontro + " " + localEncontro);
 	}
 
 	public int getIdUsuario() {

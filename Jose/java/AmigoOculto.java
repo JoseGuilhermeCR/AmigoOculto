@@ -41,6 +41,7 @@ public class AmigoOculto {
 
 	private CRUD<Usuario> crudUsuario;
 	private CRUD<Sugestao> crudSugestao;
+	private CRUD<Grupo> crudGrupo;
 
 	// Tentar abstrair e tirar essa classe daqui. Na teoria só o programa principal ficaria aqui...
 	private ArvoreBMais_Int_Int arvoreUsuarioSugestao;
@@ -52,6 +53,7 @@ public class AmigoOculto {
 
 		crudUsuario = new CRUD<>("user", Usuario.class.getConstructor());
 		crudSugestao = new CRUD<>("sugestao", Sugestao.class.getConstructor());
+		crudGrupo = new CRUD<>("grupo", Grupo.class.getConstructor());
 
 		arvoreUsuarioSugestao = new ArvoreBMais_Int_Int(10, "dados/arvoreB.usuarioSugestao.idx");
 	}
@@ -409,7 +411,7 @@ public class AmigoOculto {
 		resultado = telaListarSugestoes(usuario);
 		Sugestao sugestoes[] = listarSugestoes(usuario, resultado);
 
-		if (sugestoes != null) {
+		if (sugestoes != null && sugestoes.length != 0) {
 			System.out.print(
 					"Quais sugestões você quer deletar? (0 para sair ou [1, 2, ...]): "
 			);

@@ -90,6 +90,8 @@ public class SugestaoUI {
 
 			System.out.println("Pressione qualquer tecla para continuar...");
 			Utils.scanner.nextLine();
+
+			resultado.setObjeto(sugestoes);
 		} else {
 			resultado.setErro("Você não tem nenhuma sugestão.");
 		}
@@ -135,7 +137,6 @@ public class SugestaoUI {
 				int idInserido = crudSugestao.create(new Sugestao(nomeProduto, valor, loja, observacoes));
 
 				if (idInserido != -1) {
-
 					try {
 						arvoreUsuarioSugestao.create(usuario.getID(), idInserido);
 					} catch (IOException exception) {
@@ -163,7 +164,7 @@ public class SugestaoUI {
 
 		// Primeiro, lista as sugestões do usuário.
 		resultado = telaListarSugestoes(usuario);
-		Sugestao sugestoes[] = listarSugestoes(usuario, resultado);
+		Sugestao sugestoes[] = (Sugestao[]) resultado.getObjeto();
 
 		if (sugestoes != null && sugestoes.length != 0) {
 			System.out.print(
@@ -208,7 +209,7 @@ public class SugestaoUI {
 		Utils.limpaTela();
 
 		resultado = telaListarSugestoes(usuario);
-		Sugestao sugestoes[] = listarSugestoes(usuario, resultado);
+		Sugestao sugestoes[] = (Sugestao[]) resultado.getObjeto();
 
 		if (sugestoes != null && sugestoes.length != 0) {
 			System.out.print(

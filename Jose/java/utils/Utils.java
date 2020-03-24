@@ -60,7 +60,7 @@ public class Utils {
 		System.out.print(mensagem + " (sim/não): ");
 		String confirmacao = scanner.nextLine();
 
-		return (confirmacao.toLowerCase().equals("sim"));
+		return (confirmacao.toLowerCase().contains("sim"));
 	}
 
 	public static void mostrarMensagemResultado(Resultado resultado) {

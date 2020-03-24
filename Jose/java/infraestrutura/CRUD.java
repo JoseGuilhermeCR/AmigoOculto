@@ -178,13 +178,13 @@ public class CRUD<T extends Entidade> {
 		return entidade;
 	}
 
-	public T read(String email) {
+	public T read(String chaveSecundaria) {
 		T entidade = null;
 
 		try {
 			// Busca o ID no índice indireto, usando o valor retornado pelo método
 			// chaveSecundaria()
-			int id = indiceIndireto.read(email);
+			int id = indiceIndireto.read(chaveSecundaria);
 
 			// Só invocamos o read que usa ID
 			entidade = read(id);

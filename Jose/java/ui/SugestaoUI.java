@@ -3,6 +3,7 @@
 package ui;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import utils.Utils;
 import entidades.Sugestao;
@@ -11,13 +12,15 @@ import infraestrutura.ArvoreBMais_Int_Int;
 import infraestrutura.CRUD;
 import infraestrutura.Infraestrutura;
 
-public class SugestaoUI {
+public class SugestaoUI extends BaseUI {
 
 	private CRUD<Sugestao> crudSugestao;
 
 	private ArvoreBMais_Int_Int arvoreUsuarioSugestao;
 
 	public SugestaoUI(Infraestrutura infraestrutura) {
+		super(infraestrutura);
+
 		crudSugestao = infraestrutura.getCrudSugestao();
 		arvoreUsuarioSugestao = infraestrutura.getArvoreUsuarioSugestao();
 	}
@@ -71,10 +74,10 @@ public class SugestaoUI {
 	private Resultado telaListarSugestoes(Usuario usuario) {
 		Resultado resultado = new Resultado();
 
-		resultado = listarSugestoes(usuario);
-		Sugestao sugestoes[] = (Sugestao[]) resultado.getObjeto();
-		
-		if (resultado.valido() && sugestoes != null && sugestoes.length != 0) {
+		resultado = infraestrutura.listarRelacao1N(usuario, crudSugestao, arvoreUsuarioSugestao);
+		ArrayList<Sugestao> sugestoes = (ArrayList<Sugestao>) resultado.getObjeto();
+
+		if (resultado.valido() && sugestoes != null && sugestoes.size() != 0) {
 			Utils.limpaTela();
 			System.out.println("MINHAS SUGESTÕES\n");
 
@@ -130,11 +133,10 @@ public class SugestaoUI {
 				if (idInserido != -1) {
 					try {
 						arvoreUsuarioSugestao.create(usuario.getID(), idInserido);
+						resultado.setSucesso("Inclusão realizada com sucesso.");
 					} catch (IOException exception) {
-						resultado.setErro("Ocorreu um erro durante a inclusão.");
+						resultado.setErro("Ocorreu um erro durante a inclusão do relacionamento.");
 					}
-
-					resultado.setSucesso("Inclusão realizada com sucesso.");
 				} else {
 					resultado.setErro("Ocorreu um erro durante a inclusão.");
 				}
@@ -155,9 +157,9 @@ public class SugestaoUI {
 
 		// Primeiro, lista as sugestões do usuário.
 		resultado = telaListarSugestoes(usuario);
-		Sugestao sugestoes[] = (Sugestao[]) resultado.getObjeto();
+		ArrayList<Sugestao> sugestoes = (ArrayList<Sugestao>) resultado.getObjeto();
 
-		if (sugestoes != null && sugestoes.length != 0) {
+		if (sugestoes != null && sugestoes.size() != 0) {
 			System.out.print(
 				"Quais sugestões você quer alterar? (0 para sair ou [1, 2, ...]): "
 			);
@@ -167,8 +169,8 @@ public class SugestaoUI {
 				int indiceSugestao = Integer.parseInt(str) - 1;
 
 				// Se a sugestão for válida (estiver na lista apresentada anteriormente).
-				if (indiceSugestao >= 0 && indiceSugestao < sugestoes.length) {
-					Sugestao sugestao = sugestoes[indiceSugestao];
+				if (indiceSugestao >= 0 && indiceSugestao < sugestoes.size()) {
+					Sugestao sugestao = sugestoes.get(indiceSugestao);
 
 					if (sugestao != null) {
 						Utils.limpaTela();
@@ -200,9 +202,9 @@ public class SugestaoUI {
 		Utils.limpaTela();
 
 		resultado = telaListarSugestoes(usuario);
-		Sugestao sugestoes[] = (Sugestao[]) resultado.getObjeto();
+		ArrayList<Sugestao> sugestoes = (ArrayList<Sugestao>) resultado.getObjeto();
 
-		if (sugestoes != null && sugestoes.length != 0) {
+		if (sugestoes != null && sugestoes.size() != 0) {
 			System.out.print(
 					"Quais sugestões você quer deletar? (0 para sair ou [1, 2, ...]): "
 			);
@@ -212,8 +214,8 @@ public class SugestaoUI {
 				int indiceSugestao = Integer.parseInt(str) - 1;
 
 				// Se a sugestão for válida (estiver na lista apresentada anteriormente).
-				if (indiceSugestao >= 0 && indiceSugestao < sugestoes.length) {
-					Sugestao sugestao = sugestoes[indiceSugestao];
+				if (indiceSugestao >= 0 && indiceSugestao < sugestoes.size()) {
+					Sugestao sugestao = sugestoes.get(indiceSugestao);
 
 					if (sugestao != null) {
 						Utils.limpaTela();
@@ -270,28 +272,5 @@ public class SugestaoUI {
 		novaSugestao.setID(sugestao.getID());
 
 		return novaSugestao;
-	}
-
-	// TODO: Talvez transformar em uma função genérica.
-	private Resultado listarSugestoes(Usuario usuario) {
-		Resultado resultado = new Resultado();
-
-		try {
-			// Lê todas sugestões desse usuário.
-			int idsSugestoes[] = arvoreUsuarioSugestao.read(usuario.getID());
-			Sugestao sugestoes[] = new Sugestao[idsSugestoes.length];
-
-			// As lê e coloca no vetor de sugestões.
-			int contador = 0;
-			for (int id : idsSugestoes) {
-				sugestoes[contador++] = crudSugestao.read(id);
-			}
-
-			resultado.setObjeto(sugestoes);
-		} catch (Exception exception) {
-			resultado.setErro("Ocorreu um erro ao tentar ler as suas sugestões.");
-		}
-
-		return resultado;
 	}
 }

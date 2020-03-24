@@ -2,7 +2,11 @@
 
 package infraestrutura;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+
 import entidades.*;
+import ui.Resultado;
 
 public class Infraestrutura {
 
@@ -40,5 +44,26 @@ public class Infraestrutura {
 
 	public ArvoreBMais_Int_Int getArvoreUsuarioGrupo() {
 		return arvoreUsuarioGrupo;
+	}
+
+	public <K extends Entidade, V extends Entidade> Resultado listarRelacao1N(K entidade, CRUD<V> crud, ArvoreBMais_Int_Int arvoreRelacao) {
+		Resultado resultado = new Resultado();
+
+		try {
+			// Lê todas entidades V relacionadas a entidade K.
+			int ids[] = arvoreRelacao.read(entidade.getID());
+			
+			ArrayList<V> vs = new ArrayList<>(ids.length);
+			
+			for (int id : ids) {
+				vs.add(crud.read(id));
+			}
+
+			resultado.setObjeto(vs);
+		} catch (Exception exception) {
+			resultado.setErro("Ocorreu um erro ao tentar ler as suas sugestões.");
+		}
+		
+		return resultado;
 	}
 }

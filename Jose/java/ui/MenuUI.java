@@ -4,17 +4,17 @@ package ui;
 
 import utils.Utils;
 
-import java.io.IOException;
-
 import entidades.Usuario;
 import infraestrutura.Infraestrutura;
 
-public class MenuUI {
+public class MenuUI extends BaseUI {
 
 	private SugestaoUI sugestaoUI;
 	private GrupoUI grupoUI;
 
 	public MenuUI(Infraestrutura infraestrutura) {
+		super(infraestrutura);
+
 		sugestaoUI = new SugestaoUI(infraestrutura);
 		grupoUI = new GrupoUI(infraestrutura);
 	}

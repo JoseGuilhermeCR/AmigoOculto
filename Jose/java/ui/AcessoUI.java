@@ -7,13 +7,15 @@ import entidades.Usuario;
 import infraestrutura.CRUD;
 import infraestrutura.Infraestrutura;
 
-public class AcessoUI {
+public class AcessoUI extends BaseUI {
 
 	private CRUD<Usuario> crudUsuario;
 
 	private MenuUI menuUI;
 
 	public AcessoUI(Infraestrutura infraestrutura) {
+		super(infraestrutura);
+		
 		crudUsuario = infraestrutura.getCrudUsuario();
 
 		menuUI = new MenuUI(infraestrutura);

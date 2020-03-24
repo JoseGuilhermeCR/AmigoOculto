@@ -1,6 +1,7 @@
 package ui;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 
 import entidades.Grupo;
@@ -10,13 +11,15 @@ import infraestrutura.CRUD;
 import infraestrutura.Infraestrutura;
 import utils.Utils;
 
-public class GrupoUI {
+public class GrupoUI extends BaseUI {
 
 	private CRUD<Grupo> crudGrupo;
 
 	private ArvoreBMais_Int_Int arvoreUsuarioGrupo;
 
 	public GrupoUI(Infraestrutura infraestrutura) {
+		super(infraestrutura);
+
 		crudGrupo = infraestrutura.getCrudGrupo();
 		arvoreUsuarioGrupo = infraestrutura.getArvoreUsuarioGrupo();
 	}
@@ -150,10 +153,10 @@ public class GrupoUI {
 	private Resultado telaListarGrupos(Usuario usuario) {
 		Resultado resultado = new Resultado();
 
-		resultado = listarGrupos(usuario);
-		Grupo grupos[] = (Grupo[]) resultado.getObjeto();
+		resultado = infraestrutura.listarRelacao1N(usuario, crudGrupo, arvoreUsuarioGrupo);
+		ArrayList<Grupo> grupos = (ArrayList<Grupo>) resultado.getObjeto();
 		
-		if (resultado.valido() && grupos != null && grupos.length != 0) {
+		if (resultado.valido() && grupos != null && grupos.size() != 0) {
 			Utils.limpaTela();
 			System.out.println("MEUS GRUPOS\n");
 
@@ -221,8 +224,9 @@ public class GrupoUI {
 						if (idInserido != -1) {
 							try {
 								arvoreUsuarioGrupo.create(usuario.getID(), idInserido);
+								resultado.setSucesso("Inclusão realizada com sucesso.");
 							} catch (IOException exception) {
-								resultado.setErro("Ocorreu um erro durante a inclusão.");
+								resultado.setErro("Ocorreu um erro durante a inclusão do relacionamento.");
 							}
 						} else {
 							resultado.setErro("Ocorreu um erro durante a inclusão.");
@@ -238,29 +242,6 @@ public class GrupoUI {
 			}
 		} else {
 			resultado.setErro("O nome do grupo não pode estar vazio.");
-		}
-
-		return resultado;
-	}
-
-	// TODO: Talvez transformar em uma função genérica. (Duplicado de SugestaoUI.java)
-	private Resultado listarGrupos(Usuario usuario) {
-		Resultado resultado = new Resultado();
-
-		try {
-			// Lê todas sugestões desse usuário.
-			int idsGrupos[] = arvoreUsuarioGrupo.read(usuario.getID());
-			Grupo sugestoes[] = new Grupo[idsGrupos.length];
-
-			// As lê e coloca no vetor de sugestões.
-			int contador = 0;
-			for (int id : idsGrupos) {
-				sugestoes[contador++] = crudGrupo.read(id);
-			}
-
-			resultado.setObjeto(sugestoes);
-		} catch (Exception exception) {
-			resultado.setErro("Ocorreu um erro ao tentar ler as suas sugestões.");
 		}
 
 		return resultado;

@@ -13,21 +13,26 @@ public class Utils {
 	public static Scanner scanner = new Scanner(System.in);
 
 	/* Lê a data com o formato indicado. Caso seja vazio, usa o formato padrão dd/MM/yyyy. 
+	 * Caso linha esteja em branco, retorna 01/01/1970 00:00:00.
 	 * Caso aconteça algum erro na conversão, retorna null. */
 	public static Date readData(String format) {
-		if (format.isBlank()) {
-			format = "dd/MM/yyyy";
-		}
-
 		String data = scanner.nextLine();
 
-		SimpleDateFormat formatter = new SimpleDateFormat(format);
-
 		Date parsedData;
-		try {
-			parsedData = (Date) formatter.parse(data);
-		} catch (ParseException pe) {
-			parsedData = null;
+		if (!data.isBlank()) {
+			if (format.isBlank()) {
+				format = "dd/MM/yyyy";
+			}
+
+			SimpleDateFormat formatter = new SimpleDateFormat(format);
+
+			try {
+				parsedData = (Date) formatter.parse(data);
+			} catch (ParseException pe) {
+				parsedData = null;
+			}	
+		} else {
+			parsedData = new Date(0L);
 		}
 
 		return parsedData;

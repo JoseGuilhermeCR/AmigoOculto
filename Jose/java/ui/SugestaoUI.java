@@ -61,7 +61,7 @@ public class SugestaoUI extends BaseUI {
 					resultado = telaAlterarSugestoes(usuario);
 					break;
 				case 4:
-					resultado = telaExcluirSugestao(usuario);
+					resultado = telaExcluirSugestoes(usuario);
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");
@@ -196,7 +196,7 @@ public class SugestaoUI extends BaseUI {
 		return resultado;
 	}
 
-	private Resultado telaExcluirSugestao(Usuario usuario) {
+	private Resultado telaExcluirSugestoes(Usuario usuario) {
 		Resultado resultado = new Resultado();
 
 		Utils.limpaTela();

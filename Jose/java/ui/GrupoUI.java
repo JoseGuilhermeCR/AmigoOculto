@@ -134,6 +134,12 @@ public class GrupoUI extends BaseUI {
 				case 2:
 					resultado = telaIncluirGrupo(usuario);
 					break;
+				case 3:
+					resultado = telaAlterarGrupos(usuario);
+					break;
+				case 4:
+					resultado = telaDesativarGrupos(usuario);
+					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");
 			}
@@ -154,9 +160,9 @@ public class GrupoUI extends BaseUI {
 		Resultado resultado = new Resultado();
 
 		resultado = infraestrutura.listarRelacao1N(usuario, crudGrupo, arvoreUsuarioGrupo);
-		ArrayList<Grupo> grupos = (ArrayList<Grupo>) resultado.getObjeto();
-		
-		if (resultado.valido() && grupos != null && grupos.size() != 0) {
+		ArrayList<Grupo> grupos = filtrarGruposAtivos((ArrayList<Grupo>) resultado.getObjeto());
+
+		if (resultado.valido() && grupos != null && contemGrupoAtivo(grupos)) {
 			Utils.limpaTela();
 			System.out.println("MEUS GRUPOS\n");
 
@@ -168,7 +174,7 @@ public class GrupoUI extends BaseUI {
 					grupo.prettyPrint();
 					System.out.println();
 				}
-				contador++;	
+				contador++;
 			}
 
 			System.out.println("Pressione qualquer tecla para continuar...");
@@ -197,7 +203,8 @@ public class GrupoUI extends BaseUI {
 				"Data do sorteio (dd/MM/yyyy HH:mm): "
 			);
 			Date dataSorteio = Utils.readData("dd/MM/yyyy HH:mm");
-
+			
+			// A data deve ser válida e maior que a atual.
 			if (dataSorteio != null && dataSorteio.compareTo(new Date()) > 0) {
 				float valorMedio = Utils.readFloatOpcional("Valor médio dos presentes (opcional): ");
 
@@ -206,6 +213,7 @@ public class GrupoUI extends BaseUI {
 				);
 				Date dataEncontro = Utils.readData("dd/MM/yyyy HH:mm");
 
+				// A data deve ser válida e maior que a do sorteio.
 				if (dataEncontro != null && dataEncontro.compareTo(dataSorteio) > 0) {
 					System.out.print( 
 						"Local do encontro (opcional): "
@@ -245,5 +253,173 @@ public class GrupoUI extends BaseUI {
 		}
 
 		return resultado;
+	}
+
+	private Resultado telaAlterarGrupos(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		Utils.limpaTela();
+
+		// Primeiro, lista os grupos do usuário.
+		resultado = telaListarGrupos(usuario);
+		ArrayList<Grupo> grupos = (ArrayList<Grupo>) resultado.getObjeto();
+
+		if (grupos != null && grupos.size() != 0) {
+			System.out.print(
+				"Quais sugestões você quer alterar? (0 para sair ou [1, 2, ...]): "
+			);
+			String indicesGruposAAlterar[] = Utils.scanner.nextLine().replace(" ", "").split(",");
+
+			for (String str : indicesGruposAAlterar) {
+				int indiceGrupo = Integer.parseInt(str) - 1;
+
+				// Se a sugestão for válida (estiver na lista apresentada anteriormente).
+				if (indiceGrupo >= 0 && indiceGrupo < grupos.size()) {
+					Grupo grupo = grupos.get(indiceGrupo);
+
+					if (grupo != null) {
+						Utils.limpaTela();
+						Utils.mostrarMensagemResultado(resultado);
+
+						System.out.println("ALTERANDO GRUPO " + str + "\n");
+						grupo.fullPrettyPrint();
+						System.out.println();
+
+						// Lê as alterações dos campos.
+						Grupo novoGrupo = lerNovoGrupo(grupo);
+
+						if (novoGrupo != null && !novoGrupo.equals(grupo)) {
+							if (Utils.confirmar("Confirmar alteração?")) {
+								crudGrupo.update(novoGrupo);
+							}
+						} else {
+							resultado.setErro("Algum erro ocorreu na alteração do grupo (" + str + ").");
+						}
+					}
+				}
+			}
+		}
+
+		return resultado;
+	}
+
+	private Resultado telaDesativarGrupos(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		Utils.limpaTela();
+
+		resultado = telaListarGrupos(usuario);
+		// Observe que nesse ponto, os grupos já foram filtrados dentro de telaListarGrupos que colocou a lista no resultado.
+		ArrayList<Grupo> grupos = (ArrayList<Grupo>) resultado.getObjeto();
+
+		if (grupos != null && grupos.size() != 0) {
+			System.out.print(
+					"Quais grupos você quer desativar? (0 para sair ou [1, 2, ...]): "
+			);
+			String indicesGruposADeletar[] = Utils.scanner.nextLine().replace(" ", "").split(",");
+			
+			for (String str : indicesGruposADeletar) {
+				int indiceGrupo = Integer.parseInt(str) - 1;
+
+				// Se o grupo for válido (estiver na lista apresentada anteriormente).
+				if (indiceGrupo >= 0 && indiceGrupo < grupos.size()) {
+					Grupo grupo = grupos.get(indiceGrupo);
+
+					if (grupo != null) {
+						Utils.limpaTela();
+
+						System.out.println("DESATIVANDO GRUPO " + str + "\n");
+						grupo.prettyPrint();
+						System.out.println();
+
+						if (Utils.confirmar("Confirmar?")) {
+							grupo.setAtivo(false);
+							crudGrupo.update(grupo);
+						}
+					}
+				}
+			}
+		}
+
+		return resultado;
+	}
+
+
+	private Grupo lerNovoGrupo(Grupo grupo) {
+		Grupo novoGrupo = null;
+
+		// Lê as alterações dos campos.
+		System.out.println("O campo deixado em branco não será alterado. Datas obrigatórias.");
+		System.out.print(
+			"Novo nome do grupo: "
+		);
+		String novoNome = Utils.scanner.nextLine();
+
+		System.out.print(
+			"Nova data do sorteio (dd/MM/yyyy HH:mm): "
+		);
+		Date novaDataSorteio = Utils.readData("dd/MM/yyyy HH:mm");
+		
+		if (novaDataSorteio != null && novaDataSorteio.compareTo(new Date()) > 0) {
+			float novoValorMedio = Utils.readFloatOpcional("Novo valor médio dos presentes: ");
+
+			System.out.print(
+				"Nova data do encontro (dd/MM/yyyy HH:mm): "
+			);
+			Date novaDataEncontro = Utils.readData("dd/MM/yyyy HH:mm");
+
+			if (novaDataEncontro != null && novaDataEncontro.compareTo(novaDataSorteio) > 0) {
+				System.out.print( 
+					"Novo local do encontro: "
+				);
+				String novoLocalEncontro = Utils.scanner.nextLine();
+
+				System.out.print( 
+					"Novas observações: "
+				);
+				String novasObservacoes = Utils.scanner.nextLine();
+
+				novoGrupo = new Grupo(
+					grupo.getIdUsuario(),
+					novoNome.isBlank() ? grupo.getNome() : novoNome,
+					Float.isNaN(novoValorMedio) ? grupo.getValor() : novoValorMedio,
+					novaDataSorteio.getTime(),
+					novaDataEncontro.getTime(),
+					novoLocalEncontro.isBlank() ? grupo.getLocalEncontro() : novoLocalEncontro,
+					novasObservacoes.isBlank() ? grupo.getObservacoes() : novasObservacoes
+				);
+				novoGrupo.setID(grupo.getID());
+			}
+		}
+
+		return novoGrupo;
+	}
+	
+	private boolean contemGrupoAtivo(ArrayList<Grupo> grupos) {
+		boolean resp = false;
+
+		int i = 0;
+		while (i < grupos.size() && !grupos.get(i).isAtivo())
+			++i;
+
+		if (i < grupos.size())
+			resp = true;
+
+		return resp;
+	}
+
+	private ArrayList<Grupo> filtrarGruposAtivos(ArrayList<Grupo> grupos) {
+		ArrayList<Grupo> filtrados = null;
+
+		if (grupos != null) {
+			filtrados = new ArrayList<>();
+
+			for (Grupo grupo : grupos) {
+				if (grupo != null && grupo.isAtivo())
+					filtrados.add(grupo);
+			}
+		}
+
+		return filtrados;
 	}
 }

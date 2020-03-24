@@ -110,6 +110,38 @@ public class Grupo extends Entidade {
 		System.out.println("\t" + nome + " " + stringEncontro + " " + localEncontro);
 	}
 
+	public void fullPrettyPrint() {
+		SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+
+		String mSorteio = formatter.format(new Date(momentoSorteio));
+		String mEncontro = formatter.format(new Date(momentoEncontro));
+
+		System.out.println("\t" + nome);
+
+		if (!Float.isNaN(valor))
+			System.out.println("\tR$ " + valor);
+		
+		System.out.println("\tSorteio: " + mSorteio);
+		System.out.println("\tEncontro: " + mEncontro);
+
+		if (!localEncontro.isBlank())
+			System.out.println("\t" + localEncontro);
+
+		if (!observacoes.isBlank())
+			System.out.println("\t" + observacoes);
+	}
+
+	public boolean equals(Grupo outro) {
+		return (
+			nome.equals(outro.getNome()) &&
+			valor == outro.getValor() &&
+			momentoSorteio == outro.getMomentoSorteio() &&
+			momentoEncontro == outro.getMomentoEncontro() &&
+			localEncontro.equals(outro.getLocalEncontro()) &&
+			observacoes.equals(outro.getObservacoes())
+		);
+	}
+
 	public int getIdUsuario() {
 		return idUsuario;
 	}

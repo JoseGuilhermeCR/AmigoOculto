@@ -264,10 +264,10 @@ public class SugestaoUI extends BaseUI {
 
 		Sugestao novaSugestao = new Sugestao(
 			sugestao.getIDUsuario(),
-			(novoNome.isBlank()) ? sugestao.getProduto() : novoNome,
-			(Float.isNaN(novoValor)) ? sugestao.getValor() : novoValor,
-			(novaLoja.isBlank()) ? sugestao.getLoja() : novaLoja,
-			(novasObservacoes.isBlank()) ? sugestao.getObservacoes() : novasObservacoes
+			novoNome.isBlank() ? sugestao.getProduto() : novoNome,
+			Float.isNaN(novoValor) ? sugestao.getValor() : novoValor,
+			novaLoja.isBlank() ? sugestao.getLoja() : novaLoja,
+			novasObservacoes.isBlank() ? sugestao.getObservacoes() : novasObservacoes
 		);
 		novaSugestao.setID(sugestao.getID());
 

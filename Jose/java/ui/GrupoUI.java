@@ -266,14 +266,14 @@ public class GrupoUI extends BaseUI {
 
 		if (grupos != null && grupos.size() != 0) {
 			System.out.print(
-				"Quais sugestões você quer alterar? (0 para sair ou [1, 2, ...]): "
+				"Quais grupos você quer alterar? (0 para sair ou [1, 2, ...]): "
 			);
 			String indicesGruposAAlterar[] = Utils.scanner.nextLine().replace(" ", "").split(",");
 
 			for (String str : indicesGruposAAlterar) {
 				int indiceGrupo = Integer.parseInt(str) - 1;
 
-				// Se a sugestão for válida (estiver na lista apresentada anteriormente).
+				// Se o grupo for válido (estiver na lista apresentada anteriormente).
 				if (indiceGrupo >= 0 && indiceGrupo < grupos.size()) {
 					Grupo grupo = grupos.get(indiceGrupo);
 

@@ -54,14 +54,14 @@ public class Infraestrutura {
 			int ids[] = arvoreRelacao.read(entidade.getID());
 			
 			ArrayList<V> vs = new ArrayList<>(ids.length);
-			
+
 			for (int id : ids) {
 				vs.add(crud.read(id));
 			}
 
 			resultado.setObjeto(vs);
 		} catch (Exception exception) {
-			resultado.setErro("Ocorreu um erro ao tentar ler as suas sugestões.");
+			resultado.setErro("Ocorreu um erro ao tentar ler as relações.");
 		}
 		
 		return resultado;

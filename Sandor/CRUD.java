@@ -25,7 +25,7 @@ public class CRUD {
 
     arquivo.seek(0);
     int id = arquivo.readInt();   //reads and updates the id for the new user
-    System.out.println(id);
+    //System.out.println(id);
     id++;
 
     arquivo.seek(0);        //updates the file id header
@@ -51,19 +51,22 @@ public class CRUD {
 
     long address = indiceDireto.read(id);  //acha o endereço
 
-    arquivo.seek(address);    //vai para o endereco
+    if(address > 0){
+      arquivo.seek(address);    //vai para o endereco
 
-    short size = 0;
-    if(arquivo.readBoolean()){         //checks if the registry is not marked for deletion
-      size = arquivo.readShort();      //
-      byte[] data = new byte[size];
-      arquivo.read(data);
+      short size = 0;
+      if(arquivo.readBoolean()){         //checks if the registry is not marked for deletion
+        size = arquivo.readShort();      //
+        byte[] data = new byte[size];
+        arquivo.read(data);
 
-      user.fromByteArray(data);
+        user.fromByteArray(data);
+      }
+
+      //System.out.println(user.getNome());
+    } else {
+      user = null;
     }
-
-    System.out.println(user.getNome());
-
     return user;
   }
 
@@ -82,7 +85,7 @@ public class CRUD {
     byte[] updatedByteArray = updatedUser.toByteArray();
     short updatedSize = (short)updatedByteArray.length;
 
-    System.out.println(userSize +" | "+ updatedSize);
+    //System.out.println(userSize +" | "+ updatedSize);
 
     if(userSize == updatedSize){
       arquivo.seek(address+3);

@@ -6,6 +6,7 @@ import java.util.Scanner;
 
     Scanner in = new Scanner(System.in);
     telaMenu();
+    Sugestao i = new Sugestao();
     int acesso = in.nextInt();
     while(acesso != 0){
       Usuario user;

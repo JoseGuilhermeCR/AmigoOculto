@@ -1,14 +1,17 @@
 import java.io.*;
+import java.lang.reflect.Constructor;
 
-public class CRUD {
+public class CRUD<T extends Entidade> {
   public final String diretorio = "dados";
 
   public RandomAccessFile arquivo;
   public HashExtensivel indiceDireto;
   public ArvoreBMais_String_Int indiceIndireto;
+  public Constructor<T> ConstructorT;
 
-  public CRUD(String nomeArquivo) throws Exception {
+  public CRUD(String nomeArquivo, Constructor<T> ConstructorT) throws Exception {
 
+    this.ConstructorT = ConstructorT;
     File d = new File(this.diretorio);
     if(!d.exists()) d.mkdir();
 
@@ -21,18 +24,18 @@ public class CRUD {
 
   }//CRUD
 
-  public int create(String Nome, String Email, String Senha) throws Exception{
+  public int create(T entity) throws Exception{
 
     arquivo.seek(0);
-    int id = arquivo.readInt();   //reads and updates the id for the new user
+    int id = arquivo.readInt();   //reads and updates the id for the new entity
     //System.out.println(id);
     id++;
+    entity.setID(id);
 
     arquivo.seek(0);        //updates the file id header
     arquivo.writeInt(id);
 
-    Usuario user = new Usuario(id,Nome,Email,Senha);  // creates the user to put into the file
-    byte[] i = user.toByteArray();        // creates a byte array with the user info.
+    byte[] i = entity.toByteArray();        // creates a byte array with the entity info.
     arquivo.seek(arquivo.length());     // goes to the end of the file
     long offSet = arquivo.getFilePointer();
     boolean lapide = true;
@@ -40,14 +43,14 @@ public class CRUD {
     arquivo.writeShort(i.length);    // writes the size of the entity
     arquivo.write(i);                // writes the entity it self
 
-    indiceDireto.create(user.getID(),offSet);
-    indiceIndireto.create(user.getEmail(),user.getID());
+    indiceDireto.create(entity.getID(),offSet);
+    indiceIndireto.create(entity.chaveSecundaria(),entity.getID());
 
     return id;
   }
 
-  public Usuario read(int id) throws Exception{
-    Usuario user = new Usuario();
+  public T read(int id) throws Exception{
+    T entity = ConstructorT.newInstance();
 
     long address = indiceDireto.read(id);  //acha o endereço
 
@@ -60,34 +63,34 @@ public class CRUD {
         byte[] data = new byte[size];
         arquivo.read(data);
 
-        user.fromByteArray(data);
+        entity.fromByteArray(data);
       }
 
-      //System.out.println(user.getNome());
+      //System.out.println(entity.getNome());
     } else {
-      user = null;
+      entity = null;
     }
-    return user;
+    return entity;
   }
 
-  public Usuario read(String chave) throws Exception{
+  public T read(String chave) throws Exception{
     return read(indiceIndireto.read(chave));
   }
   //----------------------------------------------------------------------------
 
-  public void update(Usuario updatedUser) throws Exception{
+  public void update(T updatedEntity) throws Exception{
 
-    long address = indiceDireto.read(updatedUser.getID());
+    long address = indiceDireto.read(updatedEntity.getID());
 
     arquivo.seek(address+1);
-    short userSize = arquivo.readShort();
+    short entitySize = arquivo.readShort();
 
-    byte[] updatedByteArray = updatedUser.toByteArray();
+    byte[] updatedByteArray = updatedEntity.toByteArray();
     short updatedSize = (short)updatedByteArray.length;
 
-    //System.out.println(userSize +" | "+ updatedSize);
+    //System.out.println(entitySize +" | "+ updatedSize);
 
-    if(userSize == updatedSize){
+    if(entitySize == updatedSize){
       arquivo.seek(address+3);
       arquivo.write(updatedByteArray);
 
@@ -100,11 +103,11 @@ public class CRUD {
       arquivo.writeBoolean(lapide);
       arquivo.writeShort(updatedByteArray.length);
       arquivo.write(updatedByteArray);
-      indiceDireto.update(updatedUser.getID(), offSet);
+      indiceDireto.update(updatedEntity.getID(), offSet);
 
     }
 
-    indiceIndireto.update(updatedUser.chaveSecundaria(), updatedUser.getID());
+    indiceIndireto.update(updatedEntity.chaveSecundaria(), updatedEntity.getID());
 
   }
 
@@ -112,14 +115,14 @@ public class CRUD {
     long address = indiceDireto.read(id);
     arquivo.seek(address+1);
 
-    Usuario user = new Usuario();
+    T entity = ConstructorT.newInstance();
     short size = 0;
     size = arquivo.readShort();
     byte[] data = new byte[size];
     arquivo.read(data);
-    user.fromByteArray(data);
+    entity.fromByteArray(data);
 
-    String chave = user.chaveSecundaria();
+    String chave = entity.chaveSecundaria();
 
     arquivo.seek(address);
     arquivo.writeBoolean(false);

@@ -1,6 +1,7 @@
 import java.io.*;
 
-class Usuario{
+class Usuario implements Entidade{
+
   private int idUsuario;
   private String Nome;
   private String Email;
@@ -34,7 +35,7 @@ class Usuario{
   public void setSenha(String s){
     Senha = s;
   }
-  //getters---------------------------------------------------------------------
+  //Getters---------------------------------------------------------------------
   public int getID(){
     return idUsuario;
   }

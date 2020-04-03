@@ -9,9 +9,9 @@ import java.util.Scanner;
     int acesso = in.nextInt();
     while(acesso != 0){
       Usuario user;
-      CRUD crud;
+      CRUD<Usuario> crudUser;
       try{
-        crud = new CRUD("data");
+        crudUser = new CRUD<>("data", Usuario.class.getConstructor());
 
         while(acesso < 0 || acesso > 2){
           System.out.println("\n------------------------------------------------");
@@ -21,9 +21,9 @@ import java.util.Scanner;
         in.nextLine(); //"fflush()"
 
         if(acesso == 1){
-          login(in, crud);
+          login(in, crudUser);
         } else if(acesso == 2){
-          cadastro(in,crud);
+          cadastro(in,crudUser);
         }
 
       }catch (Exception e) {
@@ -44,7 +44,7 @@ import java.util.Scanner;
     System.out.print("ACESSO\n\n1 - acesso ao sistema\n2 - Novo usuario(primeiro acesso)\n0 - Sair\n\nopcao: ");
   }
 
-  public static void cadastro(Scanner in, CRUD crud){
+  public static void cadastro(Scanner in, CRUD<Usuario> crudUser){
     try{
       Usuario user = new Usuario();
       boolean flag = false;
@@ -53,7 +53,7 @@ import java.util.Scanner;
       System.out.print("\n\nNOVO USUARIO\n-------------\n\nEMAIL: ");
       email = in.nextLine();
       while(!email.equals("") && flag != true){
-        user = crud.read(email);
+        user = crudUser.read(email);
 
         if(user != null){
           System.out.println("Esse usuario ja esta cadastrado!!!\n\n");
@@ -67,7 +67,7 @@ import java.util.Scanner;
           System.out.println("Incluir " + nome + " - " + email + "?(y/n)");
           String resp = in.nextLine();
           if (resp.equals("y")) {
-            crud.create(nome, email, senha);
+            crudUser.create(new Usuario(0, nome, email, senha));
             System.out.println("\n" + nome + " foi incluido :)\n\n");
             flag = true;
           } else
@@ -85,38 +85,42 @@ import java.util.Scanner;
 
   }
 
-  public static void login(Scanner in, CRUD crud){
-    System.out.println("\n\nACESSO AO SISTEMA\n");
-    System.out.print("Email: ");
+  public static void login(Scanner in, CRUD<Usuario> crudUser){
+    try{
+      System.out.println("\n\nACESSO AO SISTEMA\n");
+      System.out.print("Email: ");
 
-    Usuario user = null;
-    boolean flag = false;
-    String email = in.nextLine();
-    while (!flag) {
-      user = crud.read(email);
-      if(user == null){
-        System.out.println("\nEmail nao encontrado!!!");
-        System.out.print("Email: ");
-        email = in.nextLine();
-      } else {
-        System.out.print("\nSenha: ");
-        String senha = in.nextLine();
-        if(senha.equals(user.getSenha())){
-          telaPrincipal();
-          flag = true;
-        } else {
-          System.out.println("\nSenha incorreta!!!");
+      Usuario user = null;
+      boolean flag = false;
+      String email = in.nextLine();
+      while (!flag) {
+        user = crudUser.read(email);
+        if(user == null){
+          System.out.println("\nEmail nao encontrado!!!");
           System.out.print("Email: ");
           email = in.nextLine();
+        } else {
+          System.out.print("\nSenha: ");
+          String senha = in.nextLine();
+          if(senha.equals(user.getSenha())){
+            telaPrincipal();
+            flag = true;
+          } else {
+            System.out.println("\nSenha incorreta!!!");
+            System.out.print("Email: ");
+            email = in.nextLine();
+          }
+
         }
-        
-      }
+      }//while
+    } catch (Exception e) {
+      e.printStackTrace();
     }
 
 
   }
 
   public static void telaPrincipal(){
-
+    System.out.println("entrou");
   }
 }//end class

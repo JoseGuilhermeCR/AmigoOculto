@@ -1,11 +1,12 @@
 import java.io.*;
 import java.util.Scanner;
 
-public class Usuario {
+public class Usuario implements Entidade {
 	private int idUsuario;
 	private String nome;
 	private String email;
 	private String senha;
+	
 
 	public Usuario() {
 		this.idUsuario = 0;
@@ -75,7 +76,17 @@ public class Usuario {
 		this.nome = entrada.readUTF();
 		this.email = entrada.readUTF();
 		this.senha = entrada.readUTF();
-
+	}
+	public long fromByteArray(String fileName,long endereco) throws IOException{
+		RandomAccessFile arq = new RandomAccessFile(fileName,"r");
+		arq.seek(endereco);
+		this.idUsuario = arq.readInt();
+		this.nome = arq.readUTF();
+		this.email = arq.readUTF();
+		this.senha = arq.readUTF();
+		long finish = arq.getFilePointer();
+		arq.close();
+		return finish;
 	}
 
 	public void print(){

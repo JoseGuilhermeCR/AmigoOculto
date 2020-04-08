@@ -17,11 +17,15 @@ public class GrupoUI extends BaseUI {
 
 	private ArvoreBMais_Int_Int arvoreUsuarioGrupo;
 
+	private ConviteUI conviteUI;
+
 	public GrupoUI(Infraestrutura infraestrutura) {
 		super(infraestrutura);
 
 		crudGrupo = infraestrutura.getCrudGrupo();
 		arvoreUsuarioGrupo = infraestrutura.getArvoreUsuarioGrupo();
+
+		conviteUI = new ConviteUI(infraestrutura);
 	}
 
 	public Resultado telaPrincipalGrupos(Usuario usuario) {
@@ -52,7 +56,7 @@ public class GrupoUI extends BaseUI {
 					resultado = telaGerenciamentoGrupos(usuario);
 					break;
 				case 2:
-					resultado = telaParticipacaoGrupos(usuario);
+				//	resultado = telaParticipacaoGrupos(usuario);
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");
@@ -92,7 +96,7 @@ public class GrupoUI extends BaseUI {
 					resultado = telaGrupos(usuario);
 					break;
 				case 2:
-					//resultado = telaParticipacaoGrupos(usuario);
+					resultado = conviteUI.telaPrincipalConvites(usuario);
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");
@@ -148,21 +152,13 @@ public class GrupoUI extends BaseUI {
 		return resultado;
 	}
 
-	private Resultado telaParticipacaoGrupos(Usuario usuario) {
-		Resultado resultado = new Resultado();
-
-		
-
-		return resultado;
-	}
-
 	private Resultado telaListarGrupos(Usuario usuario) {
 		Resultado resultado = new Resultado();
 
 		resultado = infraestrutura.listarRelacao1N(usuario, crudGrupo, arvoreUsuarioGrupo);
-		ArrayList<Grupo> grupos = filtrarGruposAtivos((ArrayList<Grupo>) resultado.getObjeto());
+		ArrayList<Grupo> grupos = GrupoUI.filtrarGruposAtivos((ArrayList<Grupo>) resultado.getObjeto());
 
-		if (resultado.valido() && grupos != null && contemGrupoAtivo(grupos)) {
+		if (resultado.valido() && grupos != null && GrupoUI.contemGrupoAtivo(grupos)) {
 			Utils.limpaTela();
 			System.out.println("MEUS GRUPOS\n");
 
@@ -395,7 +391,7 @@ public class GrupoUI extends BaseUI {
 		return novoGrupo;
 	}
 	
-	private boolean contemGrupoAtivo(ArrayList<Grupo> grupos) {
+	public static boolean contemGrupoAtivo(ArrayList<Grupo> grupos) {
 		boolean resp = false;
 
 		int i = 0;
@@ -408,7 +404,7 @@ public class GrupoUI extends BaseUI {
 		return resp;
 	}
 
-	private ArrayList<Grupo> filtrarGruposAtivos(ArrayList<Grupo> grupos) {
+	public static ArrayList<Grupo> filtrarGruposAtivos(ArrayList<Grupo> grupos) {
 		ArrayList<Grupo> filtrados = null;
 
 		if (grupos != null) {
@@ -422,4 +418,22 @@ public class GrupoUI extends BaseUI {
 
 		return filtrados;
 	}
+
+	public static ArrayList<Grupo> filtrarGruposNaoSorteados(ArrayList<Grupo> grupos) {
+		ArrayList<Grupo> filtrados = null;
+
+		if (grupos != null) {
+			long agora = new Date().getTime();
+
+			filtrados = new ArrayList<>();
+
+			for (Grupo grupo : grupos) {
+				if (grupo != null && agora < grupo.getMomentoSorteio())
+					filtrados.add(grupo);
+			}
+		}
+
+		return filtrados;
+	}
 }
+

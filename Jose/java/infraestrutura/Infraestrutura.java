@@ -13,17 +13,21 @@ public class Infraestrutura {
 	private CRUD<Usuario> crudUsuario;
 	private CRUD<Sugestao> crudSugestao;
 	private CRUD<Grupo> crudGrupo;
+	private CRUD<Convite> crudConvite;
 
 	private ArvoreBMais_Int_Int arvoreUsuarioSugestao;
 	private ArvoreBMais_Int_Int arvoreUsuarioGrupo;
+	private ArvoreBMais_Int_Int arvoreGrupoConvite;
 
 	public Infraestrutura() throws Exception {
 		crudUsuario = new CRUD<>("user", Usuario.class.getConstructor());
 		crudSugestao = new CRUD<>("sugestao", Sugestao.class.getConstructor());
 		crudGrupo = new CRUD<>("grupo", Grupo.class.getConstructor());
+		crudConvite = new CRUD<>("convite", Convite.class.getConstructor());
 
 		arvoreUsuarioSugestao = new ArvoreBMais_Int_Int(10, "dados/arvoreB.usuarioSugestao.idx");
 		arvoreUsuarioGrupo = new ArvoreBMais_Int_Int(10, "dados/arvoreB.usuarioGrupo.idx");
+		arvoreGrupoConvite = new ArvoreBMais_Int_Int(10, "dados/arvoreB.grupoConvite.idx");
 	}
 
 	public CRUD<Usuario> getCrudUsuario() {
@@ -38,12 +42,20 @@ public class Infraestrutura {
 		return crudGrupo;
 	}
 
+	public CRUD<Convite> getCrudConvite() {
+		return crudConvite;
+	}
+
 	public ArvoreBMais_Int_Int getArvoreUsuarioSugestao() {
 		return arvoreUsuarioSugestao;
 	}
 
 	public ArvoreBMais_Int_Int getArvoreUsuarioGrupo() {
 		return arvoreUsuarioGrupo;
+	}
+
+	public ArvoreBMais_Int_Int getArvoreGrupoConvite() {
+		return arvoreGrupoConvite;
 	}
 
 	public <K extends Entidade, V extends Entidade> Resultado listarRelacao1N(K entidade, CRUD<V> crud, ArvoreBMais_Int_Int arvoreRelacao) {

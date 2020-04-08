@@ -1,9 +1,14 @@
-/* José Guilherme de Castro Rodrigues - 19/02/2020 - 05/03/2020 */
+/* José Guilherme de Castro Rodrigues 2020 */
+
+package infraestrutura;
+
+import java.lang.reflect.Constructor;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.RandomAccessFile;
 import java.io.IOException;
-
-import java.util.Scanner;
+import java.time.LocalDateTime;
+import entidades.Entidade;
 
 /* O CRUD usa um índice direto de IDs para endereços e um indireto de emais para IDs.
  * O cabeçalho do arquivo consiste de 4 bytes que guardam o último ID usado por um registro seguido
@@ -22,20 +27,26 @@ import java.util.Scanner;
  * que 80% do tamanho do registro vazio, se sim, ele é desencadeado e usado, se não, o novo registro será escrito
  * no final do arquivo e a lista encadeada não sofre alteração. */
 
-public class CRUD {
+public class CRUD<T extends Entidade> {
 
 	private final String DIRETORIO = "dados";
 
+	private Constructor<T> tConstructor;
+
 	private RandomAccessFile arquivo;
+	private FileWriter arquivoLog;
 	private HashExtensivel indiceDireto;
 	private ArvoreBMais_String_Int indiceIndireto;
 
-	public CRUD(String nomeArquivo) throws Exception {
+	public CRUD(String nomeArquivo, Constructor<T> tConstructor) throws Exception {
+		this.tConstructor = tConstructor;
+
 		File dir = new File(DIRETORIO);
 		if (!dir.exists())
 			dir.mkdir();
 
 		arquivo = new RandomAccessFile(DIRETORIO + "/" + nomeArquivo + ".db", "rw");
+		arquivoLog = new FileWriter(DIRETORIO + "/" + nomeArquivo + ".log", true);
 
 		// Cabeçalho do arquivo.
 		if (arquivo.length() < 12) {
@@ -45,16 +56,18 @@ public class CRUD {
 
 		indiceDireto = new HashExtensivel(
 				10,
-			       	DIRETORIO + "/diretorio." + nomeArquivo + ".idx",
-				DIRETORIO + "/cestos." + nomeArquivo + ".idx");
+			    DIRETORIO + "/diretorio." + nomeArquivo + ".idx",
+				DIRETORIO + "/cestos." + nomeArquivo + ".idx"
+		);
 
 		indiceIndireto = new ArvoreBMais_String_Int(
 				10,
-				DIRETORIO + "/arvoreB." + nomeArquivo + ".idx");
+				DIRETORIO + "/arvoreB." + nomeArquivo + ".idx"
+		);
 	}
 
 	// Retorna o id do usuário adicionado, ou -1 em caso de erro.
-	public int create(Usuario entidade) {
+	public int create(T entidade) {
 		int ultimoID;
 
 		try {
@@ -64,7 +77,7 @@ public class CRUD {
 			// Incrementa-se o ID em 1, e atualiza no cabeçalho.
 			setUltimoIDUsado(++ultimoID);
 
-			// Coloca o ID no usuário recebido.
+			// Coloca o ID na entidade recebida.
 			entidade.setID(ultimoID);
 
 			byte[] bytesEntidade = entidade.toByteArray();
@@ -103,7 +116,7 @@ public class CRUD {
 
 			// Se é no final, temos que escrever o tamanho, se não, deixamos o tamanho do registro original.
 			if (escreverNoFinal) {
-				arquivo.writeShort(bytesEntidade.length);
+				arquivo.writeShort(tamanhoEntidade);
 			} else {
 				// Também é necessário desencadear esse registro da lista antes de utilizá-lo.
 				desencadearRegistroVazio(endereco);
@@ -117,24 +130,22 @@ public class CRUD {
 			indiceDireto.create(ultimoID, endereco);
 			// Incluir o par (chave secundária, ID) no índice indireto.
 			indiceIndireto.create(entidade.chaveSecundaria(), ultimoID);
-		} catch (IOException exception) {
-			System.err.println("IOException occurred when trying to create: " + entidade);
-			exception.printStackTrace();
-			ultimoID = -1;
 		} catch (Exception exception) {
-			exception.printStackTrace();
+			reportarExcecao("Erro ao inserir entidade!", exception);
 			ultimoID = -1;
 		}
 
 		return ultimoID;
 	}
 
-	// Retorna o usuário com determinado ID, ou null caso o usuário não exista.
-	public Usuario read(int id) {
-		Usuario usuario = new Usuario();
+	// Retorna a entidade com determinado ID, ou null caso o usuário não exista.
+	public T read(int id) {
+		T entidade = null;
 
 		try {
-			// Buscar o endereço do registro do usuário no índice direto.
+			entidade = tConstructor.newInstance();
+
+			// Buscar o endereço do registro da entidade no índice direto.
 			// Retorna -1 no caso em que não encontrar.
 			long endereco = indiceDireto.read(id); 
 
@@ -147,50 +158,46 @@ public class CRUD {
 
 			if (lapide == 0) {
 				// Ler tamanho
-				short tamanhoUsuario = arquivo.readShort();
+				short tamanhoEntidade = arquivo.readShort();
 				
-				byte[] vetorUsuario = new byte[tamanhoUsuario];
+				byte[] vetorEntidade = new byte[tamanhoEntidade];
 				// Ler vetor de bytes
-				arquivo.read(vetorUsuario);
+				arquivo.read(vetorEntidade);
 
-				usuario.fromByteArray(vetorUsuario);
+				entidade.fromByteArray(vetorEntidade);
 			} else {
 				// Usuário foi deletado.
 				// Retornamos null.
-				usuario = null;
+				entidade = null;
 			}
-		} catch (IOException exception) {
-			System.err.println("Erro ao tentar ler usuário de id: " + id);
-			exception.printStackTrace();
-			usuario = null;
 		} catch (Exception exception) {
-			exception.printStackTrace();
-			usuario = null;
+			reportarExcecao("Erro ao tentar ler entidade!", exception);
+			entidade = null;
 		}
 
-		return usuario;
+		return entidade;
 	}
 
-	public Usuario read(String email) {
-		Usuario usuario = new Usuario();
+	public T read(String chaveSecundaria) {
+		T entidade = null;
 
 		try {
 			// Busca o ID no índice indireto, usando o valor retornado pelo método
 			// chaveSecundaria()
-			int id = indiceIndireto.read(email);
+			int id = indiceIndireto.read(chaveSecundaria);
 
 			// Só invocamos o read que usa ID
-			usuario = read(id);
+			entidade = read(id);
 		} catch (IOException exception) {
-			System.err.println("Erro ao tentar ler usuário de email: " + email);
-			usuario = null;
+			reportarExcecao("Erro ao tentar ler entidade!", exception);
+			entidade = null;
 		}
 
-		return usuario;
+		return entidade;
 	}
 
-	// Atualiza o usuário. Retorna true em caso de sucesso ou false em caso de falha.
-	public boolean update(Usuario entidade) {
+	// Atualiza a entidade. Retorna true em caso de sucesso ou false em caso de falha.
+	public boolean update(T entidade) {
 		boolean sucesso = true;
 
 		try {
@@ -225,7 +232,7 @@ public class CRUD {
 				endereco = arquivo.getFilePointer();
 				// Escreve novo campo
 				arquivo.writeByte(0);
-				arquivo.writeShort(bytesEntidadeAtualizada.length);
+				arquivo.writeShort(novoTamanho);
 				arquivo.write(bytesEntidadeAtualizada);
 				// Atualiza índice direto. (Mudança de endereço).
 				indiceDireto.update(entidade.getID(), endereco);
@@ -237,12 +244,8 @@ public class CRUD {
 
 			// Atualiza índice indireto para caso de mudança de chave secundária.
 			indiceIndireto.create(entidade.chaveSecundaria(), entidade.getID());
-		} catch (IOException exception) {
-			System.err.println("Erro ao tentar atualizar usuário de id: " + entidade.getID());
-			exception.printStackTrace();
-			sucesso = false;
 		} catch (Exception exception) {
-			exception.printStackTrace();
+			reportarExcecao("Erro ao tentar atualizar entidade de id: " + entidade.getID(), exception);
 			sucesso = false;
 		}
 
@@ -266,21 +269,18 @@ public class CRUD {
 			byte[] registro = new byte[tamanhoRegistro];
 			arquivo.read(registro);
 
-			Usuario usuario = new Usuario(registro);
+			T entidade = tConstructor.newInstance();
+			entidade.fromByteArray(registro);
 
 			// Coloca registro na lista de registros vazios.
 			encadearRegistroVazio(endereco, tamanhoRegistro);
 
 			// Deletar a entrada do índice indireto usando chaveSecundária.
-			indiceIndireto.delete(usuario.chaveSecundaria());
+			indiceIndireto.delete(entidade.chaveSecundaria());
 			// Deletar a entrada do índice direto usando ID.
 			indiceDireto.delete(id);
-		} catch (IOException exception) {
-			System.err.println("Erro ao tentar deletar usuário com id: " + id);
-			exception.printStackTrace();
-			sucesso = false;
 		} catch (Exception exception) {
-			exception.printStackTrace();
+			reportarExcecao("Erro ao tentar deletar entidade de id: " + id, exception);
 			sucesso = false;
 		}
 
@@ -292,14 +292,14 @@ public class CRUD {
 		long registro = fetchPrimeiroRegistroVazio();
 		// Se o cabeçalho não aponta pra nenhum registro vazio, a lista está vazia.
 		if (registro == -1) {
-			System.out.println("Cabeçalho aponta para registro -1.");
+			//System.out.println("Cabeçalho aponta para registro -1.");
 			setPrimeiroRegistroVazio(enderecoRegistro);
 			// Pula a lápide e o tamanho do registro.
 			arquivo.seek(enderecoRegistro + 3);
 			// Escreve o endereço do pŕoximo registro vazio.
 			arquivo.writeLong(-1);
 		} else {
-			System.out.println("Cabeçalho aponta para: " + String.format("0x%08X", registro));
+			//System.out.println("Cabeçalho aponta para: " + String.format("0x%08X", registro));
 			// Vai para o primeiro registro e pega seu tamanho.
 			arquivo.seek(registro + 1); // Pula lápide.
 			// Lê o tamanho dele.
@@ -307,14 +307,14 @@ public class CRUD {
 
 			// O nosso registro é menor do que o primeiro registro.
 			if (tamanhoRegistro < tamanhoApontado) {
-				System.out.println("Nosso registro é menor que o primeiro registro.");
+				//System.out.println("Nosso registro é menor que o primeiro registro.");
 				// O cabeçalho aponta para o registro sendo adicionado.
 				setPrimeiroRegistroVazio(enderecoRegistro);
 				// O nosso registro aponta para o, já não mais, primeiro registro.
 				arquivo.seek(enderecoRegistro + 3); // Pula lápide e tamanho.
 				arquivo.writeLong(registro);
 			} else { // É maior do que o primeiro registro.
-				System.out.println("Nosso registro NÃO é menor que o primeiro registro.");
+				//System.out.println("Nosso registro NÃO é menor que o primeiro registro.");
 				// registroAnterior é o primeiro registro.
 				long registroAnterior = registro;
 				// registro é o próximo registro. 
@@ -330,12 +330,12 @@ public class CRUD {
 				}
 
 				// Saindo do loop, registro anterior é o registro que apontará para o registro sendo encadeado.
-				System.out.println("Registro anterior ( " + String.format("0x%08X", registroAnterior) + ") apontará para: " + String.format("0x%08X", enderecoRegistro));
+				//System.out.println("Registro anterior ( " + String.format("0x%08X", registroAnterior) + ") apontará para: " + String.format("0x%08X", enderecoRegistro));
 				arquivo.seek(registroAnterior + 3); // Pula lápide e o tamanho do registro.
 				arquivo.writeLong(enderecoRegistro);
 
 				// O nosso registro, deve apontar para o endereço que está em registro.
-				System.out.println("Nosso registro ( " + String.format("0x%08X", enderecoRegistro) + ") apontará para: " + String.format("0x%08X", registro));
+				//System.out.println("Nosso registro ( " + String.format("0x%08X", enderecoRegistro) + ") apontará para: " + String.format("0x%08X", registro));
 				arquivo.seek(enderecoRegistro + 3); // Pula lápide e o tamanho do registro.
 				arquivo.writeLong(registro);
 			}
@@ -354,12 +354,12 @@ public class CRUD {
 			registroAnterior = registro;
 			registro = arquivo.readLong();
 		}
-		System.out.println("Registro que será desencadeado está sendo apontando por " + String.format("0x%08X", registroAnterior));
+		//System.out.println("Registro que será desencadeado está sendo apontando por " + String.format("0x%08X", registroAnterior));
 
 		// Vai no registro que será desencadeado e pega o endereço apontado por ele.
 		arquivo.seek(enderecoRegistro + 3);
 		long proximoRegistro = arquivo.readLong();
-		System.out.println("Registro que será desencadeado está apontando para " + String.format("0x%08X", proximoRegistro));
+		//System.out.println("Registro que será desencadeado está apontando para " + String.format("0x%08X", proximoRegistro));
 
 		// Caso o registro anterior não continue sendo o cabeçalho, temos que ir para ele e pular a lápide + tamanho.
 		// Se continuar sendo o cabeçalho, só fazemos um seek para a posição correta  (não aplicamos o offset).
@@ -416,8 +416,29 @@ public class CRUD {
 		arquivo.seek(endereco);
 	}
 
+	// Escreve a exceção ocorrida em um arquivo de log.
+	private void reportarExcecao(String mensagem, Exception exception) {
+		try {
+			arquivoLog.write(
+				"Exceção: " + mensagem + " Data: " +  LocalDateTime.now().toString() + "\n" +
+				exception.toString() + "\n"
+			);
+			
+			StackTraceElement[] elements = exception.getStackTrace();
+
+			arquivoLog.write("======StackTrace======\n");
+			for (StackTraceElement element : elements) {
+				arquivoLog.write(element.toString() + "\n");
+			}
+
+			arquivoLog.write("\n\n");
+
+			arquivoLog.flush();
+		} catch(IOException e) { }
+	}
+
 	// Main feita só para testes.
-	public static void main(String[] args) {
+	/*public static void main(String[] args) {
 		try {
 
 			CRUD crud = new CRUD("user");
@@ -549,5 +570,5 @@ public class CRUD {
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}
-	}
+	}*/
 }

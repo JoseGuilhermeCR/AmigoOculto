@@ -1,3 +1,5 @@
+package infraestrutura;
+
 /*********
  * TABELA HASH EXTENSÍVEL
  * int chave, long dado

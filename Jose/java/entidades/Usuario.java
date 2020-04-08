@@ -1,38 +1,33 @@
-/* José Guilherme de Castro Rodrigues - 12/02/2020 */
+/* José Guilherme de Castro Rodrigues 2020 */
+
+package entidades;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class Usuario {
-
-	private int id;
+public class Usuario extends Entidade {
 
 	private String nome;
 	private String email;
 	private String senha;
 
 	public Usuario() {
-		this.id = 0;
+		super();
+
 		this.nome = new String();
 		this.email = new String();
 		this.senha = new String();
 	}
 
-	public Usuario(int id, String nome, String email, String senha) {
-		this.id = id;
+	public Usuario(String nome, String email, String senha) {
+		super();
+
 		this.nome = nome;
 		this.email = email;
 		this.senha = senha;
-	}
-
-	public Usuario(byte[] array) throws IOException {
-		fromByteArray(array);
-	}
-
-	public void setID(int id) {
-		this.id = id;
 	}
 
 	public void setNome(String nome) {
@@ -55,10 +50,6 @@ public class Usuario {
 		nome = byteStreamInput.readUTF();
 		email = byteStreamInput.readUTF();
 		senha = byteStreamInput.readUTF();
-	}
-
-	public int getID() {
-		return id;
 	}
 
 	public String getNome() {
@@ -91,5 +82,9 @@ public class Usuario {
 
 	public String chaveSecundaria() {
 		return email;
+	}
+
+	public boolean validarSenha(String senha) {
+		return this.senha.equals(senha);
 	}
 }

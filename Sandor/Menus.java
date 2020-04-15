@@ -4,6 +4,19 @@ import java.util.Scanner;
 class Menus {
 
   CRUD<Usuario> crudUser;
+  CRUD<Sugestao> crudSugestao;
+  ArvoreBMais_Int_Int relacaoSugestao;
+
+  public Menus(){
+    try{
+      crudSugestao = new CRUD<>("sugestao", Sugestao.class.getConstructor());
+      crudUser = new CRUD<>("data", Usuario.class.getConstructor());
+      relacaoSugestao = new ArvoreBMais_Int_Int(10, "dados"+"/arvoreB."+ "relacaoSugestao" +".idx");
+
+    }catch(Exception e){
+      e.printStackTrace();
+    }
+  }
 
   public void telaMenu(Scanner in){
 
@@ -97,7 +110,7 @@ class Menus {
           System.out.print("\nSenha: ");
           String senha = in.nextLine();
           if(senha.equals(user.getSenha())){
-            telaPrincipal(in);
+            telaPrincipal(in, user);
             flag = true;
           } else {
             System.out.println("\nSenha incorreta!!!");
@@ -114,15 +127,14 @@ class Menus {
 
   }
 
-  public void telaPrincipal(Scanner in){
+  public void telaPrincipal(Scanner in, Usuario user){
 
     menuUsuario(false);
     int acesso = in.nextInt();
     while(acesso != 0){
-      Usuario user;
+      //Usuario user;
       //CRUD<Usuario> crudUser;
       try{
-        crudUser = new CRUD<>("data", Usuario.class.getConstructor());
 
         while(acesso < 0 || acesso > 3){
           menuUsuario(true);
@@ -131,11 +143,11 @@ class Menus {
         in.nextLine(); //"fflush()"
 
         if(acesso == 1){
-          sugestao(in);
+          sugestao(in, user);
         } else if(acesso == 2){
-          grupos(in);
+          //grupos(in, user);
         } else if(acesso == 3){
-          convites(in);
+          //convites(in, user);
         }
 
       }catch (Exception e) {
@@ -150,7 +162,42 @@ class Menus {
     }
   }
 
-  public void sugestao(Scanner in){
+  public void sugestao(Scanner in, Usuario user){
+
+    SugestaoMenu.menuSugestao(false);
+    int acesso = in.nextInt();
+
+    while(acesso != 0){
+
+      try{
+
+
+        while(acesso < 0 || acesso > 4){
+          SugestaoMenu.menuSugestao(true);
+          acesso = in.nextInt();
+        }
+        in.nextLine(); //"fflush()"
+        //crudSugestao.create(new Sugestao());
+        //System.out.println("\n\n\n\n+*+*+*+*+*+*+*++*+*+*+*+**+*\n\n\n");
+
+        if(acesso == 1);
+          //SugestaoMenu.listagem(in);
+        else if(acesso == 2)
+          SugestaoMenu.inclusao(in, user);
+        else if(acesso == 3);
+          //SugestaoMenu.alteracao(in);
+        else if(acesso == 4);
+          //SugestaoMenu.exclusao(in);
+
+      }catch (Exception e) {
+        e.printStackTrace();
+      }
+
+      if(acesso != 0){
+        SugestaoMenu.menuSugestao(false);
+        acesso = in.nextInt();
+      }
+    }
 
   }
 
@@ -189,7 +236,4 @@ class Menus {
                       "0) Sair\n\n" + "Opcao: ");
   }
 
-  public static void menuSugestao(){
-
-  }
 }

@@ -1,6 +1,6 @@
 import java.io.*;
 
-class Sugestao {
+class Sugestao implements Entidade{
 
   private int idSugestao, idUsuario;
   private String produto, loja, observacoes;
@@ -111,6 +111,11 @@ class Sugestao {
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+
+  public void print(){
+    System.out.println(produto+"\n\t"+loja+"\n\tR$"+valor+"\n\t"+observacoes);
+
   }
 
 }//end class

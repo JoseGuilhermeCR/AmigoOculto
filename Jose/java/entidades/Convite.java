@@ -2,6 +2,7 @@
 
 package entidades;
 
+import java.util.Date;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -23,12 +24,14 @@ public class Convite extends Entidade {
 
 		this.emailUsuario = new String();
 		this.estado = 0;	// Por padrão, pendente.
+		this.momentoConvite = new Date().getTime();
 	}
 
 	public Convite(int idGrupo, String emailUsuario) {
 		this.idGrupo = idGrupo;
 		this.emailUsuario = emailUsuario;
 		this.estado = 0;	// Por padrão, pendente.
+		this.momentoConvite = new Date().getTime();
 	}
 
 	public void setIdGrupo(int idGrupo) {

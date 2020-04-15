@@ -19,6 +19,8 @@ public class Infraestrutura {
 	private ArvoreBMais_Int_Int arvoreUsuarioGrupo;
 	private ArvoreBMais_Int_Int arvoreGrupoConvite;
 
+	private ArvoreBMais_ChaveComposta_String_Int listaInvertidaConvitesPendentes;
+
 	public Infraestrutura() throws Exception {
 		crudUsuario = new CRUD<>("user", Usuario.class.getConstructor());
 		crudSugestao = new CRUD<>("sugestao", Sugestao.class.getConstructor());
@@ -28,6 +30,8 @@ public class Infraestrutura {
 		arvoreUsuarioSugestao = new ArvoreBMais_Int_Int(10, "dados/arvoreB.usuarioSugestao.idx");
 		arvoreUsuarioGrupo = new ArvoreBMais_Int_Int(10, "dados/arvoreB.usuarioGrupo.idx");
 		arvoreGrupoConvite = new ArvoreBMais_Int_Int(10, "dados/arvoreB.grupoConvite.idx");
+
+		listaInvertidaConvitesPendentes = new ArvoreBMais_ChaveComposta_String_Int(10, "dados/listaInvertida.convitesPendentes.idx"); 
 	}
 
 	public CRUD<Usuario> getCrudUsuario() {
@@ -56,6 +60,10 @@ public class Infraestrutura {
 
 	public ArvoreBMais_Int_Int getArvoreGrupoConvite() {
 		return arvoreGrupoConvite;
+	}
+
+	public ArvoreBMais_ChaveComposta_String_Int getListaInvertidaConvitesPendentes() {
+		return listaInvertidaConvitesPendentes;
 	}
 
 	public <K extends Entidade, V extends Entidade> Resultado listarRelacao1N(K entidade, CRUD<V> crud, ArvoreBMais_Int_Int arvoreRelacao) {

@@ -170,6 +170,8 @@ public class CRUD<T extends Entidade> {
 					// Retornamos null.
 					entidade = null;
 				}
+			} else {
+				entidade = null;
 			}
 		} catch (Exception exception) {
 			reportarExcecao("Erro ao tentar ler entidade!", exception);

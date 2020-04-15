@@ -287,6 +287,7 @@ public class GrupoUI extends BaseUI {
 						if (novoGrupo != null && !novoGrupo.equals(grupo)) {
 							if (Utils.confirmar("Confirmar alteração?")) {
 								crudGrupo.update(novoGrupo);
+								resultado.setSucesso("Grupo " + novoGrupo.getNome() + " alterado com sucesso!");
 							}
 						} else {
 							resultado.setErro("Algum erro ocorreu na alteração do grupo (" + str + ").");
@@ -323,6 +324,7 @@ public class GrupoUI extends BaseUI {
 
 					if (grupo != null) {
 						Utils.limpaTela();
+						Utils.mostrarMensagemResultado(resultado);
 
 						System.out.println("DESATIVANDO GRUPO " + str + "\n");
 						grupo.prettyPrint();
@@ -331,6 +333,7 @@ public class GrupoUI extends BaseUI {
 						if (Utils.confirmar("Confirmar?")) {
 							grupo.setAtivo(false);
 							crudGrupo.update(grupo);
+							resultado.setSucesso("Grupo " + grupo.getNome() + " desativado com sucesso!");
 						}
 					}
 				}

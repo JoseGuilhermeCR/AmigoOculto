@@ -6,10 +6,8 @@ import java.io.IOException;
 import entidades.Grupo;
 import entidades.Usuario;
 import entidades.Convite;
-import infraestrutura.ArvoreBMais_Int_Int;
-import infraestrutura.CRUD;
-import infraestrutura.Infraestrutura;
 import utils.Utils;
+import infraestrutura.*;
 
 public class ConviteUI extends BaseUI {
 
@@ -18,6 +16,7 @@ public class ConviteUI extends BaseUI {
 
 	private ArvoreBMais_Int_Int arvoreUsuarioGrupo;
 	private ArvoreBMais_Int_Int arvoreGrupoConvite;
+	private ArvoreBMais_ChaveComposta_String_Int listaConvitesPendentes;
 
 	public ConviteUI(Infraestrutura infraestrutura) {
 		super(infraestrutura);
@@ -27,6 +26,8 @@ public class ConviteUI extends BaseUI {
 
 		arvoreUsuarioGrupo = infraestrutura.getArvoreUsuarioGrupo();
 		arvoreGrupoConvite = infraestrutura.getArvoreGrupoConvite();
+
+		listaConvitesPendentes = infraestrutura.getListaInvertidaConvitesPendentes();
 	}
 
 	public Resultado telaPrincipalConvites(Usuario usuario) {
@@ -61,6 +62,7 @@ public class ConviteUI extends BaseUI {
 					resultado = telaEmitirConvites(usuario);
 					break;
 				case 3:
+					resultado = telaCancelarConvites(usuario);
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");
@@ -85,112 +87,170 @@ public class ConviteUI extends BaseUI {
 				Utils.limpaTela();
 				System.out.println("CONVITES DO GRUPO \"" + grupoEscolhido.getNome() + "\"\n");
 
-				int contador = -1;
-				for (Convite convite : convites) {
+					int contador = 1;
+					for (Convite convite : convites) {
+						if (convite != null) {
+							System.out.print(contador + ".");
+							convite.prettyPrint();
+							System.out.println();
+						}
+						contador++;
+					}
+
+					System.out.println("Pressione qualquer tecla para continuar...");
+					Utils.scanner.nextLine();
+
+					resultado.setObjeto(grupoEscolhido);
+				} else {
+					resultado.setErro("Não há convites nesse grupo.");
+				}
+			}
+
+			return resultado;
+		}
+
+		private Resultado telaEmitirConvites(Usuario usuario) {
+			Resultado resultado = telaListarConvites(usuario, true);
+			
+			if (resultado.valido()) {
+				Grupo grupoEscolhido = (Grupo) resultado.getObjeto();
+
+				Utils.limpaTela();
+				System.out.println("EMITINDO CONVITES PARA \"" + grupoEscolhido.getNome() + "\"\n\n");
+
+				System.out.print("Email do usuário (Vazio para cancelar): ");
+				String email = Utils.scanner.nextLine();
+				while (!email.isBlank()) {
+					String chaveSecundaria = grupoEscolhido.getID() + "|" + email;
+
+					Convite convite = crudConvite.read(chaveSecundaria);
 					if (convite != null) {
+						// Se pendente ou aceito.
+						if (convite.getEstado() == 0 || convite.getEstado() == 1) {
+							resultado.setSucesso("Convite já emitido para esse email.");
+						} else {
+							// Recusado ou cancelado.
+							if (Utils.confirmar("O convite foi " + ((convite.getEstado() == 2) ? "recusado" : "cancelado" ) + ". Quer reemitir esse convite?")) {
+								convite.setEstado((byte)0);	// Volta estado para pendente.
+								crudConvite.update(convite);
+								try {
+									listaConvitesPendentes.create(email, convite.getID());
+									resultado.setSucesso("Convite emitido novamente.");
+								} catch (IOException exception) {
+									resultado.setErro("Ocorreu um erro durante a inclusão.");
+								}
+							} else {
+								resultado.setSucesso("Convite não reemitido.");
+							}
+						}
+					} else {
+						// Convite não existe, emitir!
+						int idInserido = crudConvite.create(new Convite(grupoEscolhido.getID(), email));
+						if (idInserido != -1) {
+							try {
+								// Inserir na lista invertida de convites pendentes.
+								listaConvitesPendentes.create(email, idInserido);
+								// Inserir na árvore de relação.
+								arvoreGrupoConvite.create(grupoEscolhido.getID(), idInserido);
+								resultado.setSucesso("Convite para " + email + " emitido com sucesso.");
+							} catch (IOException exception) {
+								resultado.setErro("Ocorreu um erro durante a inclusão.");
+							}
+						} else {
+							resultado.setErro("Erro ao criar convite.");
+						}
+					}
+
+					Utils.limpaTela();
+					Utils.mostrarMensagemResultado(resultado);
+					System.out.println("EMITINDO CONVITES PARA \"" + grupoEscolhido.getNome() + "\"\n\n");
+		
+					System.out.print("Email do usuário (Vazio para cancelar): ");
+					email = Utils.scanner.nextLine();
+				}
+			} else {
+				resultado.setErro("Não foi possível continuar o processo de emissão de convites.");
+			}
+
+			return resultado;
+		}
+
+		private Resultado telaCancelarConvites(Usuario usuario) {
+			Resultado resultado = telaListarConvites(usuario, true);
+
+			if (resultado.valido()) {
+				// Grupo que foi escolhido está no resultado.
+				Grupo grupoEscolhido = (Grupo) resultado.getObjeto();
+
+				// Pega todos os convites relacionados a esse grupo.
+				resultado = infraestrutura.listarRelacao1N(grupoEscolhido, crudConvite, arvoreGrupoConvite);
+				ArrayList<Convite> convites = (ArrayList<Convite>) resultado.getObjeto();
+
+				if (resultado.valido() && convites != null) {
+					System.out.print(
+							"Quais convites você quer cancelar? (0 para sair ou [1, 2, ...]): "
+					);
+					String indicesConvitesACancelar[] = Utils.scanner.nextLine().replace(" ", "").split(",");
+
+					for (String str : indicesConvitesACancelar) {
+						int indiceConvite = Integer.parseInt(str) - 1;
+
+						// Se o convit for válido (estiver na lista apresentada anteriormente).
+						if (indiceConvite >= 0 && indiceConvite < convites.size()) {
+							Convite convite = convites.get(indiceConvite);
+							if (convite != null) {
+								Utils.limpaTela();
+								Utils.mostrarMensagemResultado(resultado);
+
+								System.out.print("CANCELANDO CONVITE " + str + "\n");
+								convite.prettyPrint();
+								System.out.println();
+
+								if (Utils.confirmar("Confirmar?")) {
+									convite.setEstado((byte)3);	// Cancelado.
+									crudConvite.update(convite);
+
+									String email = convite.getEmailUsuario();
+									try {
+										// Remover da lista invertida de convites pendentes.
+										listaConvitesPendentes.delete(email, convite.getID());
+										resultado.setSucesso("Convite para " + email + " cancelado com sucesso.");
+									} catch (IOException exception) {
+										resultado.setErro("Ocorreu um erro durante o cancelamento do convite para " + email);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			return resultado;
+		}
+
+		private Resultado escolherGrupoDeLista(Usuario usuario, boolean antesSorteio) {
+			Resultado resultado = infraestrutura.listarRelacao1N(usuario, crudGrupo, arvoreUsuarioGrupo);
+			ArrayList<Grupo> grupos = GrupoUI.filtrarGruposAtivos((ArrayList<Grupo>) resultado.getObjeto());
+			
+			if (antesSorteio)
+				grupos = GrupoUI.filtrarGruposNaoSorteados(grupos);
+
+			if (resultado.valido() && grupos != null && GrupoUI.contemGrupoAtivo(grupos)) {
+				Utils.limpaTela();
+				System.out.println("ESCOLHA O GRUPO:\n\n");
+
+				int contador = 1;
+				for (Grupo grupo : grupos) {
+					// Caso o CRUD não ache o grupo com esse ID, será retornado null.
+					if (grupo != null) {
 						System.out.print(contador + ".");
-						convite.prettyPrint();
+						grupo.prettyPrint();
 						System.out.println();
 					}
 					contador++;
 				}
 
-				System.out.println("Pressione qualquer tecla para continuar...");
-				Utils.scanner.nextLine();
-
-				resultado.setObjeto(grupoEscolhido);
-			} else {
-				resultado.setErro("Não há convites nesse grupo.");
-			}
-		}
-
-		return resultado;
-	}
-
-	private Resultado telaEmitirConvites(Usuario usuario) {
-		Resultado resultado = telaListarConvites(usuario, true);
-		
-		if (resultado.valido()) {
-			Grupo grupoEscolhido = (Grupo) resultado.getObjeto();
-
-			Utils.limpaTela();
-			System.out.println("EMITINDO CONVITES PARA \"" + grupoEscolhido.getNome() + "\"\n\n");
-
-			System.out.print("Email do usuário (Vazio para cancelar): ");
-			String email = Utils.scanner.nextLine();
-			while (!email.isBlank()) {
-				String chaveSecundaria = grupoEscolhido.getID() + "|" + usuario.getEmail();
-
-				Convite convite = crudConvite.read(chaveSecundaria);
-				if (convite != null) {
-					// Se pendente ou aceito.
-					if (convite.getEstado() == 0 || convite.getEstado() == 1) {
-						resultado.setSucesso("Convite já emitido para esse email.");
-					} else {
-						// Recusado ou cancelado.
-						if (Utils.confirmar("Quer reemitir esse convite?")) {
-							convite.setEstado((byte)0);	// Volta estado para pendente.
-							crudConvite.update(convite);
-							// TODO: Necessário colocar convite na lista invertida novamente?
-						} else {
-							resultado.setSucesso("Convite não reemitido.");
-						}
-					}
-				} else {
-					// Convite não existe, emitir!
-					int idInserido = crudConvite.create(new Convite(grupoEscolhido.getID(), usuario.getEmail()));
-					if (idInserido != -1) {
-						// TODO: Inserir par email e id do novo convite na lista invertida de convites pendentes.
-						
-						// Inserir na árvore de relação.
-						try {
-							arvoreGrupoConvite.create(grupoEscolhido.getID(), idInserido);
-							resultado.setSucesso("Convite emitido com sucesso.");
-						} catch (IOException exception) {
-							resultado.setErro("Ocorreu um erro durante a inclusão do relacionamento.");
-						}
-					} else {
-						resultado.setErro("Erro ao criar convite.");
-					}
-				}
-
-				Utils.limpaTela();
-				Utils.mostrarMensagemResultado(resultado);
-				System.out.println("EMITINDO CONVITES PARA \"" + grupoEscolhido.getNome() + "\"\n\n");
-	
-				System.out.print("Email do usuário (Vazio para cancelar): ");
-				email = Utils.scanner.nextLine();
-			}
-		} else {
-			resultado.setErro("Não há grupos em que seja possível emitir convites.");
-		}
-
-		return resultado;
-	}
-
-	private Resultado escolherGrupoDeLista(Usuario usuario, boolean antesSorteio) {
-		Resultado resultado = infraestrutura.listarRelacao1N(usuario, crudGrupo, arvoreUsuarioGrupo);
-		ArrayList<Grupo> grupos = GrupoUI.filtrarGruposAtivos((ArrayList<Grupo>) resultado.getObjeto());
-		
-		if (antesSorteio)
-			grupos = GrupoUI.filtrarGruposNaoSorteados(grupos);
-
-		if (resultado.valido() && grupos != null && GrupoUI.contemGrupoAtivo(grupos)) {
-			Utils.limpaTela();
-			System.out.println("ESCOLHA O GRUPO:\n\n");
-
-			int contador = 1;
-			for (Grupo grupo : grupos) {
-				// Caso o CRUD não ache o grupo com esse ID, será retornado null.
-				if (grupo != null) {
-					System.out.print(contador + ".");
-					grupo.prettyPrint();
-					System.out.println();
-				}
-				contador++;
-			}
-
-			System.out.print("Grupo: ");
+				System.out.print("Grupo: ");
 
 			try {
 				resultado.setObjeto(grupos.get(Utils.readInt() - 1));

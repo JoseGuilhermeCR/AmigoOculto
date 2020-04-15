@@ -96,7 +96,7 @@ public class Grupo extends Entidade {
 		/* Para não gastar dois bytes para dois booleans, 
 		* empacotaremos os booleans em um byte.
 		* Esse byte tem formato 0000 00 (sorteado) (ativo). */
-		byteStreamOutput.writeByte(((0x00 | Utils.boolToInt(sorteado)) << 1) | Utils.boolToInt(ativo));
+		byteStreamOutput.writeByte((Utils.boolToInt(sorteado) << 1) | Utils.boolToInt(ativo));
 
 		return byteStream.toByteArray();
 	}

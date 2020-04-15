@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import entidades.Entidade;
 
-/* O CRUD usa um índice direto de IDs para endereços e um indireto de emais para IDs.
+/* O CRUD usa um índice direto de IDs para endereços e um indireto de chaves secundárias para IDs.
  * O cabeçalho do arquivo consiste de 4 bytes que guardam o último ID usado por um registro seguido
  * de 8 bytes que guardam o próximo endereço vazio disponível no arquivo. 
  * Um registro pode ter dois formatos. O primeiro formato é usado quando o registro é válido e consiste

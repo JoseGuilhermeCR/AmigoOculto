@@ -36,11 +36,15 @@ public class AcessoUI extends BaseUI {
 				"ACESSO\n\n" +
 				"1) Acesso ao sistema\n" +
 				"2) Novo usuário (primeiro acesso)\n\n" +
+				"0) Sair\n\n" + 
 				"Opção: "
 			);
 			opcao = Utils.readInt();
 
 			switch (opcao) {
+				case 0:
+					resultado.setSucesso("Até mais!");
+					break;
 				case 1:
 					resultado = telaAcessoJaCadastrado();
 					break;

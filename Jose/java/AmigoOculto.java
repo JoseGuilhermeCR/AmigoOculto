@@ -3,6 +3,7 @@
 import infraestrutura.Infraestrutura;
 import ui.Resultado;
 import ui.AcessoUI;
+import utils.Utils;
 
 public class AmigoOculto {
 	private Infraestrutura infraestrutura;
@@ -21,7 +22,7 @@ public class AmigoOculto {
 
 	public static void main(String[] args) {
 		try {
-			new AmigoOculto().run();
+			Utils.mostrarMensagemResultado(new AmigoOculto().run());
 		} catch (Exception exception) {
 			System.err.println("Um erro ocorreu durante a inicialização do programa.");
 			exception.printStackTrace();

@@ -73,6 +73,10 @@ public class Convite extends Entidade {
 		return momentoConvite;
 	}
 
+	public String getMomentoConviteFormatado() {
+		return new SimpleDateFormat("dd/MM/yyyy HH:mm.").format(new Date(momentoConvite));
+	}
+
 	public byte getEstado() {
 		return estado;
 	}

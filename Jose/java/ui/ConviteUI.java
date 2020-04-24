@@ -56,7 +56,7 @@ public class ConviteUI extends BaseUI {
 					resultado.setSucesso("CONVITES > GERENCIAMENTO DE GRUPOS");
 					break;
 				case 1:
-					resultado = telaListarConvites(usuario, false);
+					resultado = telaListarConvites(usuario, false, false);
 					break;
 				case 2:
 					resultado = telaEmitirConvites(usuario);
@@ -72,7 +72,7 @@ public class ConviteUI extends BaseUI {
 		return resultado;
 	}
 
-	private Resultado telaListarConvites(Usuario usuario, boolean antesSorteio) {
+	private Resultado telaListarConvites(Usuario usuario, boolean antesSorteio, boolean somentePendentes) {
 		// Mostramos grupos para usuário escolher de qual grupo quer ver os convites.
 		Resultado resultado = escolherGrupoDeLista(usuario, antesSorteio);
 
@@ -84,24 +84,28 @@ public class ConviteUI extends BaseUI {
 			ArrayList<Convite> convites = (ArrayList<Convite>) resultado.getObjeto();
 
 			if (resultado.valido() && convites != null) {
+				if (somentePendentes) {
+					convites = filtrarConvitesPendentes(convites);
+				}
+
 				Utils.limpaTela();
 				System.out.println("CONVITES DO GRUPO \"" + grupoEscolhido.getNome() + "\"\n");
 
-					int contador = 1;
-					for (Convite convite : convites) {
-						if (convite != null) {
-							System.out.print(contador + ".");
-							convite.prettyPrint();
-							System.out.println();
-						}
-						contador++;
+				int contador = 1;
+				for (Convite convite : convites) {
+					if (convite != null) {
+						System.out.print(contador + ".");
+						convite.prettyPrint();
+						System.out.println();
 					}
+					contador++;
+				}
 
-					System.out.println("Pressione qualquer tecla para continuar...");
-					Utils.scanner.nextLine();
+				System.out.println("Pressione qualquer tecla para continuar...");
+				Utils.scanner.nextLine();
 
-					resultado.setObjeto(grupoEscolhido);
-				} else {
+				resultado.setObjeto(grupoEscolhido);
+			} else {
 					resultado.setErro("Não há convites nesse grupo.");
 				}
 			}
@@ -110,7 +114,7 @@ public class ConviteUI extends BaseUI {
 		}
 
 		private Resultado telaEmitirConvites(Usuario usuario) {
-			Resultado resultado = telaListarConvites(usuario, true);
+			Resultado resultado = telaListarConvites(usuario, true, false);
 			
 			if (resultado.valido()) {
 				Grupo grupoEscolhido = (Grupo) resultado.getObjeto();
@@ -176,7 +180,7 @@ public class ConviteUI extends BaseUI {
 		}
 
 		private Resultado telaCancelarConvites(Usuario usuario) {
-			Resultado resultado = telaListarConvites(usuario, true);
+			Resultado resultado = telaListarConvites(usuario, true, true);
 
 			if (resultado.valido()) {
 				// Grupo que foi escolhido está no resultado.
@@ -186,10 +190,12 @@ public class ConviteUI extends BaseUI {
 				resultado = infraestrutura.listarRelacao1N(grupoEscolhido, crudConvite, arvoreGrupoConvite);
 				ArrayList<Convite> convites = (ArrayList<Convite>) resultado.getObjeto();
 
-				if (resultado.valido() && convites != null) {
+				convites = filtrarConvitesPendentes(convites);
+
+				if (resultado.valido() && convites != null && convites.size() != 0) {
 					System.out.print(
 							"Quais convites você quer cancelar? (0 para sair ou [1, 2, ...]): "
-					);
+							);
 					String indicesConvitesACancelar[] = Utils.scanner.nextLine().replace(" ", "").split(",");
 
 					for (String str : indicesConvitesACancelar) {
@@ -262,5 +268,14 @@ public class ConviteUI extends BaseUI {
 		}
 
 		return resultado;
+	}
+
+	private ArrayList<Convite> filtrarConvitesPendentes(ArrayList<Convite> convites) {
+		ArrayList<Convite> tmp = new ArrayList<>();
+		for (Convite convite : convites) {
+			if (convite.getEstado() == 0)
+				tmp.add(convite);
+		}
+		return tmp;
 	}
 }

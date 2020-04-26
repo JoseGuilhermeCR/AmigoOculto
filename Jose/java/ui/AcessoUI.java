@@ -51,8 +51,10 @@ public class AcessoUI extends BaseUI {
 				case 2:
 					resultado = telaPrimeiroAcesso();
 					break;
+				default:
+					resultado.setErro("Opção (" + opcao + ") inválida.");
 			}
-		} while (opcao > 0 && opcao <= 2);
+		} while (opcao != 0);
 
 		return resultado;
 	}

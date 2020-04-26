@@ -101,7 +101,7 @@ public class ConviteUI extends BaseUI {
 					contador++;
 				}
 
-				System.out.println("Pressione qualquer tecla para continuar...");
+				System.out.println("Pressione enter para continuar...");
 				Utils.scanner.nextLine();
 
 				resultado.setObjeto(grupoEscolhido);

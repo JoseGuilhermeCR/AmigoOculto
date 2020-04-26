@@ -41,7 +41,6 @@ public class Utils {
 	public static int readInt() {
 		int i = scanner.nextInt();
 		scanner.nextLine(); // limpa buffer
-
 		return i;
 	}
 

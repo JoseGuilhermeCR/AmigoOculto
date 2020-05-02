@@ -171,7 +171,6 @@ class Menus {
 
       try{
 
-
         while(acesso < 0 || acesso > 4){
           SugestaoMenu.menuSugestao(true);
           acesso = in.nextInt();
@@ -183,7 +182,7 @@ class Menus {
         if(acesso == 1);
           //SugestaoMenu.listagem(in);
         else if(acesso == 2)
-          SugestaoMenu.inclusao(in, user);
+          SugestaoMenu.inclusao(in, user, crudSugestao);
         else if(acesso == 3);
           //SugestaoMenu.alteracao(in);
         else if(acesso == 4);

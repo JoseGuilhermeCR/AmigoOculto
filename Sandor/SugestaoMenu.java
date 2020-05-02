@@ -17,7 +17,7 @@ class SugestaoMenu{
                        "0) Sair\n\n" + "Opcao: ");
   }
 
-  public static void listagem(Scanner in, Usuario user, Menus obj){
+  public static void listagem(Scanner in, Usuario user, Menus obj) throws Exception{
     int[] suggestions = obj.relacaoSugestao.read(user.getID());
 
     for (int i = 0; i < suggestions.length; ++i) {
@@ -25,10 +25,28 @@ class SugestaoMenu{
       sugestao.print();
       System.out.println();
     }
-    
+
   }
 
-  public static void inclusao(Scanner in, Usuario user){
+  public static void inclusao(Scanner in, Usuario user, CRUD<Sugestao> crudSugestao) throws Exception{
+    System.out.print("Qual o nome do produto?: ");
+    String produto = in.nextLine();
+
+    if(!produto.equals("")){
+      System.out.print("Qual o nome da loja?: ");
+      String loja = in.nextLine();
+      System.out.print("Qual o preco?: ");
+      float valor = in.nextFloat();
+      //in.nextLine();
+      System.out.print("Alguma observacao?: ");
+      String observacoes = in.nextLine();
+      System.out.print("Tem certeza que quer incluir?(y/n): ");
+      String resp = in.nextLine();
+      if(resp.equals("y")){
+        crudSugestao.create(new Sugestao(0, user.getID(), produto, loja, observacoes, valor));
+        System.out.print("Sugestao incluida \\*-*/");
+      }
+    }
 
   }
 

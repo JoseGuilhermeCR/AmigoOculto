@@ -3,6 +3,7 @@ package ui;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 
 import entidades.Grupo;
 import entidades.Participacao;
@@ -20,6 +21,7 @@ public class GrupoUI extends BaseUI {
 
 	private ArvoreBMais_Int_Int arvoreUsuarioGrupo;
 	private ArvoreBMais_Int_Int arvoreGrupoParticipacao;
+	private ArvoreBMais_Int_Int arvoreUsuarioParticipacao;
 
 	private ConviteUI conviteUI;
 	private ParticipacaoUI participacaoUI;
@@ -33,6 +35,7 @@ public class GrupoUI extends BaseUI {
 
 		arvoreUsuarioGrupo = infraestrutura.getArvoreUsuarioGrupo();
 		arvoreGrupoParticipacao = infraestrutura.getArvoreGrupoParticipacao();
+		arvoreUsuarioParticipacao = infraestrutura.getArvoreUsuarioParticipacao();
 
 		conviteUI = new ConviteUI(infraestrutura);
 		participacaoUI = new ParticipacaoUI(infraestrutura);
@@ -457,8 +460,97 @@ public class GrupoUI extends BaseUI {
 	private Resultado telaRemoverParticipantesGrupo(Usuario usuario) {
 		Resultado resultado = new Resultado();
 
+		resultado = telaListarGrupos(usuario);
+		if (resultado.valido()) {
+			ArrayList<Grupo> grupos = (ArrayList<Grupo>) resultado.getObjeto();
 
-		
+			System.out.print("Quer remover participantes de qual grupo? (0 para voltar): ");
+			int opcao = Utils.readInt();
+
+			if (opcao != 0) {
+				int indice = opcao - 1;
+				if (indice >= 0 && indice < grupos.size()) {
+					Grupo grupo = grupos.get(indice);
+
+					// Apresenta informações mais detalhadas do grupo.
+					Utils.limpaTela();
+					System.out.print("INFORMAÇÕES DO GRUPO\n\n");
+					grupo.fullPrettyPrint();
+					if (grupo.isSorteado()) {
+						System.out.print("\nObserve que o sorteio desse grupo já aconteceu!\n\n");
+					} else {
+						System.out.print("\nObserve que o sorteio desse grupo ainda não aconteceu!\n\n");
+					}
+
+					// Busca os usuários que participam desse grupo.
+					resultado = infraestrutura.listarRelacao1N(grupo, crudParticipacoes, arvoreGrupoParticipacao);
+
+					if (resultado.valido()) {
+						ArrayList<Participacao> participacoes = (ArrayList<Participacao>) resultado.getObjeto();
+						HashMap<Integer, Integer> presenteadosPor = new HashMap<>();
+
+						System.out.println("Participantes deste grupo:");
+						// Agora usar os ids dos usuários nas participações para recuperar os usuários que estão no grupo
+						int contador = 1;
+						for (Participacao participacao : participacoes) {
+							if (participacao != null) {
+								//Mostrar o nome desses usuários na tela.
+								Usuario u = crudUsuarios.read(participacao.getIDUsuario());
+								if (u != null) {
+									System.out.println(contador + "\t" + u.getNome() + " - " + u.getEmail());
+								}
+
+								if (grupo.isSorteado()) {
+									presenteadosPor.put(participacao.getIDAmigo(), participacao.getID());
+								}
+							}
+
+							++contador;
+						}
+						
+						System.out.print("\nQual participante você quer remover? (0 para voltar): ");
+						opcao = Utils.readInt();
+
+						if (opcao != 0) {
+							indice = opcao - 1;
+							if (indice >= 0 && indice < participacoes.size()) {
+								Participacao participacaoRemovida = participacoes.get(indice);
+								Usuario usuarioRemovido = crudUsuarios.read(participacaoRemovida.getIDUsuario());
+								
+								// É necessário transferir o presente que seria presenteado a esse para outro usuário.
+								if (grupo.isSorteado()) {
+									int idParticipacaoPresenteariaRemovido = presenteadosPor.get(usuarioRemovido.getID());
+									// A participação que presentearia o removido vai presentear quem o removido presentearia.
+									Participacao p = crudParticipacoes.read(idParticipacaoPresenteariaRemovido);
+									p.setIDAmigo(participacaoRemovida.getIDAmigo());
+									crudParticipacoes.update(p);
+								}
+
+								crudParticipacoes.delete(participacaoRemovida.getID());
+								
+								try {
+									arvoreGrupoParticipacao.delete(grupo.getID(), participacaoRemovida.getID());
+									arvoreUsuarioParticipacao.delete(usuarioRemovido.getID(), participacaoRemovida.getID());
+								} catch (IOException exception) {
+									resultado.setErro("Um erro ocorreu na remoção do usuário.");
+								}
+							} else {
+								resultado.setErro("Usuário escolhido não existe.");
+							}
+						} else {
+							resultado.setSucesso("Remoção cancelada");
+						}
+					} else {
+						resultado.setErro("Não foi possível recuperar os participantes deste grupo.");
+					}
+				} else {
+					resultado.setErro("Grupo escolhido não existe.");
+				}
+			} else {
+				resultado.setSucesso("Remoção cancelada");
+			}
+		}
+
 		return resultado;
 	}
 

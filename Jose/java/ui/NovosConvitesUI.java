@@ -8,14 +8,18 @@ import infraestrutura.*;
 import entidades.Usuario;
 import entidades.Grupo;
 import entidades.Convite;
+import entidades.Participacao;
 
 public class NovosConvitesUI extends BaseUI {
 	
 	private CRUD<Usuario> crudUsuarios;
 	private CRUD<Grupo> crudGrupos;
 	private CRUD<Convite> crudConvites;
+	private CRUD<Participacao> crudParticipacoes;
 
 	private ArvoreBMais_ChaveComposta_String_Int listaConvitesPendentes;
+	private ArvoreBMais_Int_Int arvoreGrupoParticipacao;
+	private ArvoreBMais_Int_Int arvoreUsuarioParticipacao;
 
 	public NovosConvitesUI(Infraestrutura infraestrutura) {
 		super(infraestrutura);
@@ -23,8 +27,11 @@ public class NovosConvitesUI extends BaseUI {
 		crudUsuarios = infraestrutura.getCrudUsuario();
 		crudGrupos = infraestrutura.getCrudGrupo();
 		crudConvites = infraestrutura.getCrudConvite();
+		crudParticipacoes = infraestrutura.getCrudParticipacoes();
 
 		listaConvitesPendentes = infraestrutura.getListaInvertidaConvitesPendentes();
+		arvoreGrupoParticipacao = infraestrutura.getArvoreGrupoParticipacao();
+		arvoreUsuarioParticipacao = infraestrutura.getArvoreUsuarioParticipacao();
 	}
 
 	public Resultado telaNovosConvites(Usuario usuario) {
@@ -103,18 +110,33 @@ public class NovosConvitesUI extends BaseUI {
 					if (!opcao.contains("n")) {
 						if (opcao.contains("a")) {
 							convite.setEstado((byte)1);
-							// Crud de participação: INSERIR AQUI.
+
+							// Inclui entidade participacao que conecta usuário com grupo e a pessoa que será presenteada pelo usuário.
+							int idParticipacao = crudParticipacoes.create(new Participacao(usuario.getID(), convite.getIdGrupo(), 0));
+
+							if (idParticipacao != -1) {
+								// Também inclui nas árvores de relacionamento usuarioParticipacao e grupoParticipacao.
+								try {
+										arvoreGrupoParticipacao.create(convite.getIdGrupo(), idParticipacao);
+										arvoreUsuarioParticipacao.create(usuario.getID(), idParticipacao);
+								} catch (IOException exception) {
+									resultado.setErro("Erro ao aceitar convite.");
+								}
+							}
+
 						} else if (opcao.contains("r")) {
 							convite.setEstado((byte)2);
 						}
 
-						crudConvites.update(convite);
-
-						try {
-							listaConvitesPendentes.delete(usuario.getEmail(), convite.getID());
-							resultado.setSucesso("Alteração concluída.");
-						} catch (IOException exception) {
-							resultado.setErro("Erro ao retirar convite pendente.");
+						if (resultado.valido()) {
+							crudConvites.update(convite);
+						
+							try {
+								listaConvitesPendentes.delete(usuario.getEmail(), convite.getID());
+								resultado.setSucesso("Alteração concluída.");
+							} catch (IOException exception) {
+								resultado.setErro("Erro ao retirar convite pendente.");
+							}
 						}
 					}
 				} else {

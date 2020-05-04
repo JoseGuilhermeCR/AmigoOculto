@@ -18,6 +18,14 @@ public class Participacao extends Entidade {
 		super();
 	}
 
+	public Participacao(int idUsuario, int idGrupo, int idAmigo) {
+		super();
+		
+		this.idUsuario = idUsuario;
+		this.idGrupo = idGrupo;
+		this.idAmigo = idAmigo;
+	}
+
 	public void setIDUsuario(int idUsuario) {
 		this.idUsuario = idUsuario;
 	}

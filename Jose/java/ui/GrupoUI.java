@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import entidades.Grupo;
+import entidades.Participacao;
 import entidades.Usuario;
 import infraestrutura.ArvoreBMais_Int_Int;
 import infraestrutura.CRUD;
@@ -14,18 +15,27 @@ import utils.Utils;
 public class GrupoUI extends BaseUI {
 
 	private CRUD<Grupo> crudGrupo;
+	private CRUD<Participacao> crudParticipacoes;
+	private CRUD<Usuario> crudUsuarios;
 
 	private ArvoreBMais_Int_Int arvoreUsuarioGrupo;
+	private ArvoreBMais_Int_Int arvoreGrupoParticipacao;
 
 	private ConviteUI conviteUI;
+	private ParticipacaoUI participacaoUI;
 
 	public GrupoUI(Infraestrutura infraestrutura) {
 		super(infraestrutura);
 
 		crudGrupo = infraestrutura.getCrudGrupo();
+		crudParticipacoes = infraestrutura.getCrudParticipacoes();
+		crudUsuarios = infraestrutura.getCrudUsuario();
+
 		arvoreUsuarioGrupo = infraestrutura.getArvoreUsuarioGrupo();
+		arvoreGrupoParticipacao = infraestrutura.getArvoreGrupoParticipacao();
 
 		conviteUI = new ConviteUI(infraestrutura);
+		participacaoUI = new ParticipacaoUI(infraestrutura);
 	}
 
 	public Resultado telaPrincipalGrupos(Usuario usuario) {
@@ -56,7 +66,7 @@ public class GrupoUI extends BaseUI {
 					resultado = telaGerenciamentoGrupos(usuario);
 					break;
 				case 2:
-				//	resultado = telaParticipacaoGrupos(usuario);
+					//resultado = participacaoUI.telaPrincipalParticipacao(usuario);
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");
@@ -97,6 +107,9 @@ public class GrupoUI extends BaseUI {
 					break;
 				case 2:
 					resultado = conviteUI.telaPrincipalConvites(usuario);
+					break;
+				case 3:
+					resultado = telaParticipantesGrupo(usuario);
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");
@@ -158,7 +171,7 @@ public class GrupoUI extends BaseUI {
 		resultado = infraestrutura.listarRelacao1N(usuario, crudGrupo, arvoreUsuarioGrupo);
 		ArrayList<Grupo> grupos = GrupoUI.filtrarGruposAtivos((ArrayList<Grupo>) resultado.getObjeto());
 
-		if (resultado.valido() && grupos != null && GrupoUI.contemGrupoAtivo(grupos)) {
+		if (resultado.valido() && grupos != null && grupos.size() != 0) {
 			Utils.limpaTela();
 			System.out.println("MEUS GRUPOS\n");
 
@@ -343,6 +356,111 @@ public class GrupoUI extends BaseUI {
 		return resultado;
 	}
 
+	private Resultado telaParticipantesGrupo(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		int opcao;
+		do {
+			Utils.limpaTela();
+
+			Utils.mostrarMensagemResultado(resultado);
+
+			System.out.print(
+				"AMIGO OCULTO 1.0\n" +
+				"================\n\n" +
+				"INÍCIO > MENU GRUPOS > GERENCIAMENTO DE GRUPOS > PARTICIPANTES\n\n" +
+				"1) Listagem\n" +
+				"2) Remoção\n" +
+				"0) Retornar ao menu anterior\n\n" +
+				"Opção: "
+			);
+			opcao = Utils.readInt();
+
+			switch (opcao) {
+				case 0:
+					resultado.setSucesso("PARTICIPANTES > GERENCIAMENTO DE GRUPOS");
+					break;
+				case 1:
+					resultado = telaListarParticipantesGrupo(usuario);
+					break;
+				case 2:
+					resultado = telaRemoverParticipantesGrupo(usuario);
+					break;
+				default:
+					resultado.setErro("Opção (" + opcao + ") inválida.");
+			}
+		} while (opcao != 0);
+
+		return resultado;
+	}
+
+	private Resultado telaListarParticipantesGrupo(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		resultado = telaListarGrupos(usuario);
+		if (resultado.valido()) {
+			ArrayList<Grupo> grupos = (ArrayList<Grupo>) resultado.getObjeto();
+
+			System.out.print("Quer ver os participantes de qual grupo? (0 para voltar): ");
+			int opcao = Utils.readInt();
+
+			if (opcao != 0) {
+				int indice = opcao - 1;
+				if (indice >= 0 && indice < grupos.size()) {
+					Grupo grupo = grupos.get(indice);
+
+					// Apresenta informações mais detalhadas do grupo.
+					Utils.limpaTela();
+					System.out.print("INFORMAÇÕES DO GRUPO\n\n");
+					grupo.fullPrettyPrint();
+					if (grupo.isSorteado()) {
+						System.out.print("\nObserve que o sorteio desse grupo já aconteceu!\n\n");
+					} else {
+						System.out.print("\nObserve que o sorteio desse grupo ainda não aconteceu!\n\n");
+					}
+
+					// Busca os usuários que participam desse grupo.
+					resultado = infraestrutura.listarRelacao1N(grupo, crudParticipacoes, arvoreGrupoParticipacao);
+
+					if (resultado.valido()) {
+						ArrayList<Participacao> participacoes = (ArrayList<Participacao>) resultado.getObjeto();
+
+						System.out.println("Participantes deste grupo:");
+						// Agora usar os ids dos usuários nas participações para recuperar os usuários que estão no grupo
+						// e mostrar o nome desses usuários na tela.
+						for (Participacao participacao : participacoes) {
+							if (participacao != null) {
+								Usuario u = crudUsuarios.read(participacao.getIDUsuario());
+								if (u != null) {
+									System.out.println(u.getNome() + " - " + u.getEmail());
+								}	
+							}
+						}
+
+						System.out.print("\nPressione enter para continuar...");
+						Utils.scanner.nextLine();
+					} else {
+						resultado.setErro("Não foi possível recuperar os participantes deste grupo.");
+					}
+
+				} else {
+					resultado.setErro("Grupo escolhido não existe.");
+				}
+			} else {
+				resultado.setSucesso("Listagem cancelada");
+			}
+		}
+
+		return resultado;
+	}
+
+	private Resultado telaRemoverParticipantesGrupo(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+
+		
+		return resultado;
+	}
 
 	private Grupo lerNovoGrupo(Grupo grupo) {
 		Grupo novoGrupo = null;

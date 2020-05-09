@@ -9,7 +9,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class Convite extends Entidade {
 
@@ -39,7 +38,7 @@ public class Convite extends Entidade {
 	}
 
 	public void setEmail(String email) {
-		this.emailUsuario = emailUsuario;
+		this.emailUsuario = email;
 	}
 
 	public void setMomentoConvite(long momentoConvite) {

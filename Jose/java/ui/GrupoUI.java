@@ -69,7 +69,7 @@ public class GrupoUI extends BaseUI {
 					resultado = telaGerenciamentoGrupos(usuario);
 					break;
 				case 2:
-					//resultado = participacaoUI.telaPrincipalParticipacao(usuario);
+					resultado = participacaoUI.telaPrincipalParticipacao(usuario);
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");

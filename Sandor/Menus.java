@@ -179,14 +179,14 @@ class Menus {
         //crudSugestao.create(new Sugestao());
         //System.out.println("\n\n\n\n+*+*+*+*+*+*+*++*+*+*+*+**+*\n\n\n");
 
-        if(acesso == 1);
-          //SugestaoMenu.listagem(in);
+        if(acesso == 1)
+          SugestaoMenu.listagem(in, user, this);
         else if(acesso == 2)
-          SugestaoMenu.inclusao(in, user, crudSugestao);
-        else if(acesso == 3);
-          //SugestaoMenu.alteracao(in);
-        else if(acesso == 4);
-          //SugestaoMenu.exclusao(in);
+          SugestaoMenu.inclusao(in, user, crudSugestao, this.relacaoSugestao);
+        else if(acesso == 3)
+          SugestaoMenu.alteracao(in, user, this.relacaoSugestao, this);
+        else if(acesso == 4)
+          SugestaoMenu.exclusao(in, user, this);
 
       }catch (Exception e) {
         e.printStackTrace();

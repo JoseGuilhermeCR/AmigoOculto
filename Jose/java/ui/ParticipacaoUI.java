@@ -106,7 +106,11 @@ public class ParticipacaoUI extends BaseUI {
 		if (resultado.valido() && participacoes != null && participacoes.size() != 0) {
 			ArrayList<Grupo> grupos = new ArrayList<Grupo>();
 			for (Participacao participacao : participacoes) {
-				grupos.add(crudGrupo.read(participacao.getIDGrupo()));
+				// Checar se o grupo está ativo.
+				Grupo grupo = crudGrupo.read(participacao.getIDGrupo());
+				if (grupo.isAtivo()) {
+					grupos.add(grupo);
+				}
 			}
 
 			if (grupos.size() != 0) {
@@ -135,6 +139,8 @@ public class ParticipacaoUI extends BaseUI {
 						resultado.setErro("Um erro ocorreu durante a escolha do grupo.");
 					}
 				}
+			} else {
+				resultado.setErro("Você não está nenhum grupo.");	
 			}
 		} else {
 			resultado.setErro("Você não está nenhum grupo.");
@@ -176,7 +182,7 @@ public class ParticipacaoUI extends BaseUI {
 			Usuario amigo = crudUsuario.read(participacao.getIDAmigo());
 
 			Utils.limpaTela();
-			System.out.println("AMIGO SORTEADO:\n\n");
+			System.out.println("AMIGO SORTEADO:\n");
 			System.out.println(amigo.getNome());
 			System.out.println("\nSugestões de presente do amigo:");
 
@@ -185,9 +191,12 @@ public class ParticipacaoUI extends BaseUI {
 				ArrayList<Sugestao> sugestoes = (ArrayList<Sugestao>) resultado.getObjeto();
 
 				if (sugestoes.size() != 0) {
+					int contador = 1;
 					for (Sugestao sugestao : sugestoes) {
+						System.out.print(contador + ".");
 						sugestao.prettyPrint();
 						System.out.println();
+						++contador;
 					}
 				} else {
 					System.out.println(amigo.getNome() + " não cadastrou nenhuma sugestão de presente.\n");

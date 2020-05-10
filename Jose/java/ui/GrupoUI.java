@@ -2,6 +2,7 @@ package ui;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 
@@ -113,6 +114,9 @@ public class GrupoUI extends BaseUI {
 					break;
 				case 3:
 					resultado = telaParticipantesGrupo(usuario);
+					break;
+				case 4:
+					resultado = telaRealizarSorteio(usuario);
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");
@@ -603,6 +607,78 @@ public class GrupoUI extends BaseUI {
 
 		return novoGrupo;
 	}
+
+	private Resultado telaRealizarSorteio(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		resultado = infraestrutura.listarRelacao1N(usuario, crudGrupo, arvoreUsuarioGrupo);
+		if (resultado.valido()) {
+			ArrayList<Grupo> grupos = GrupoUI.filtrarGruposAtivos((ArrayList<Grupo>) resultado.getObjeto());
+			grupos = GrupoUI.filtrarGruposASortear(grupos);
+
+			if (grupos != null && grupos.size() != 0) {
+				Utils.limpaTela();
+				System.out.println("GRUPOS A SORTEAR:\n");
+
+				int contador = 1;
+				for (Grupo grupo : grupos) {
+					// Caso o CRUD não ache o grupo com esse ID, será retornado null.
+					if (grupo != null) {
+						System.out.print(contador + ".");
+						grupo.prettyPrint();
+						System.out.println();
+					}
+					contador++;
+				}
+
+				System.out.println();
+				System.out.print("Escolha um grupo (0 para voltar): ");
+
+				int indice = Utils.readInt() - 1;
+				if (indice >= 0 && indice < grupos.size()) {
+					Grupo grupo = grupos.get(indice);
+
+					Utils.limpaTela();
+					System.out.println("INFORMAÇÕES DO GRUPO\n");
+					grupo.fullPrettyPrint();
+
+					// Recupera todas as participações deste grupo.
+					resultado = infraestrutura.listarRelacao1N(grupo, crudParticipacoes, arvoreGrupoParticipacao);
+					if (resultado.valido()) {
+						ArrayList<Participacao> participacoes = (ArrayList<Participacao>) resultado.getObjeto();
+						// Embaralha essas participações.
+						Collections.shuffle(participacoes);
+
+						// Para cada participação.
+						for (int i = 0; i < participacoes.size(); ++i) {
+							Participacao participacao = participacoes.get(i);
+							// O usuário desta presenteará o da próxima (circular, então último presenteia o primeiro).
+							participacao.setIDAmigo(participacoes.get((i + 1) % participacoes.size()).getIDUsuario());
+							crudParticipacoes.update(participacao);
+						}
+
+						grupo.setSorteado(true);
+						crudGrupo.update(grupo);
+
+						System.out.print("Sorteio realizado com sucesso! Pressione enter para continuar...");
+						Utils.scanner.nextLine();
+
+						resultado.setSucesso("Sorteio realizado.");
+					} else {
+						resultado.setErro("Um erro ocorreu na busca dos participantes do grupo.");
+					}
+				} else if (indice == -1) {
+					resultado.setSucesso("Escolha cancelada.");
+				} else {
+					resultado.setErro("Um erro ocorreu durante a escolha do grupo.");
+				}
+			} else {
+				resultado.setErro("Você não tem nenhum grupo a sortear.");
+			}	
+		}
+		
+		return resultado;
+	}
 	
 	public static boolean contemGrupoAtivo(ArrayList<Grupo> grupos) {
 		boolean resp = false;
@@ -642,6 +718,23 @@ public class GrupoUI extends BaseUI {
 
 			for (Grupo grupo : grupos) {
 				if (grupo != null && agora < grupo.getMomentoSorteio())
+					filtrados.add(grupo);
+			}
+		}
+
+		return filtrados;
+	}
+
+	public static ArrayList<Grupo> filtrarGruposASortear(ArrayList<Grupo> grupos) {
+		ArrayList<Grupo> filtrados = null;
+
+		if (grupos != null) {
+			long agora = new Date().getTime();
+
+			filtrados = new ArrayList<>();
+
+			for (Grupo grupo : grupos) {
+				if (grupo != null && !grupo.isSorteado() && agora > grupo.getMomentoSorteio())
 					filtrados.add(grupo);
 			}
 		}

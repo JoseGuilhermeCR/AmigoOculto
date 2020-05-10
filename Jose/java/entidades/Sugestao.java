@@ -118,14 +118,17 @@ public class Sugestao extends Entidade {
 	public void prettyPrint() {
 		System.out.println("\t" + produto);
 		
-		if (!loja.isBlank())
-			System.out.println("\t" + loja);
+		if (!loja.isBlank()) {
+			System.out.println("\tLoja: " + loja);
+		}
 
-		if (!Float.isNaN(valor))
+		if (!Float.isNaN(valor)) {
 			System.out.println("\tR$ " + valor);
+		}
 
-		if (!observacoes.isBlank())
-			System.out.println("\t" + observacoes);
+		if (!observacoes.isBlank()) {
+			System.out.println("\n\tObservações: " + observacoes);
+		}
 	}
 
 	public boolean equals(Sugestao outra) {

@@ -96,7 +96,7 @@ public class Grupo extends Entidade {
 		/* Para não gastar dois bytes para dois booleans, 
 		* empacotaremos os booleans em um byte.
 		* Esse byte tem formato 0000 00 (sorteado) (ativo). */
-		byteStreamOutput.writeByte(((0x00 | Utils.boolToInt(sorteado)) << 1) | Utils.boolToInt(ativo));
+		byteStreamOutput.writeByte((Utils.boolToInt(sorteado) << 1) | Utils.boolToInt(ativo));
 
 		return byteStream.toByteArray();
 	}
@@ -113,22 +113,33 @@ public class Grupo extends Entidade {
 	public void fullPrettyPrint() {
 		SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 
-		String mSorteio = formatter.format(new Date(momentoSorteio));
+		Date dateSorteio = new Date(momentoSorteio);
+
+		String mSorteio = formatter.format(dateSorteio);
 		String mEncontro = formatter.format(new Date(momentoEncontro));
 
 		System.out.println("\t" + nome);
 
-		if (!Float.isNaN(valor))
+		if (!Float.isNaN(valor)) {
 			System.out.println("\tR$ " + valor);
+		}
 		
-		System.out.println("\tSorteio: " + mSorteio);
+		if (new Date().compareTo(dateSorteio) < 0) {
+			System.out.println("\tSorteio: " + mSorteio);
+		} else {
+			System.out.println("\tO sorteio ocorreu em: " + mSorteio);
+		}
+
 		System.out.println("\tEncontro: " + mEncontro);
 
-		if (!localEncontro.isBlank())
-			System.out.println("\t" + localEncontro);
+		if (!localEncontro.isBlank()) {
+			System.out.println("\tLocal: " + localEncontro);
+		}
 
-		if (!observacoes.isBlank())
-			System.out.println("\t" + observacoes);
+		System.out.println();
+		if (!observacoes.isBlank()) {
+			System.out.println("\tObservações:\n\t" + observacoes);
+		}
 	}
 
 	public boolean equals(Grupo outro) {

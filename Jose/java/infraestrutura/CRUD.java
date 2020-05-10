@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import entidades.Entidade;
 
-/* O CRUD usa um índice direto de IDs para endereços e um indireto de emais para IDs.
+/* O CRUD usa um índice direto de IDs para endereços e um indireto de chaves secundárias para IDs.
  * O cabeçalho do arquivo consiste de 4 bytes que guardam o último ID usado por um registro seguido
  * de 8 bytes que guardam o próximo endereço vazio disponível no arquivo. 
  * Um registro pode ter dois formatos. O primeiro formato é usado quando o registro é válido e consiste
@@ -150,24 +150,27 @@ public class CRUD<T extends Entidade> {
 			long endereco = indiceDireto.read(id); 
 
 			// Mover o ponteiro do arquivo para o endereço recuperado.
-			// Caso endereço seja -1, IOException vai ocorrer.
-			arquivo.seek(endereco);
+			if (endereco != -1) {
+				arquivo.seek(endereco);
 
-			// Ler lápide
-			byte lapide = arquivo.readByte();
+				// Ler lápide
+				byte lapide = arquivo.readByte();
 
-			if (lapide == 0) {
-				// Ler tamanho
-				short tamanhoEntidade = arquivo.readShort();
-				
-				byte[] vetorEntidade = new byte[tamanhoEntidade];
-				// Ler vetor de bytes
-				arquivo.read(vetorEntidade);
+				if (lapide == 0) {
+					// Ler tamanho
+					short tamanhoEntidade = arquivo.readShort();
 
-				entidade.fromByteArray(vetorEntidade);
+					byte[] vetorEntidade = new byte[tamanhoEntidade];
+					// Ler vetor de bytes
+					arquivo.read(vetorEntidade);
+
+					entidade.fromByteArray(vetorEntidade);
+				} else {
+					// Usuário foi deletado.
+					// Retornamos null.
+					entidade = null;
+				}
 			} else {
-				// Usuário foi deletado.
-				// Retornamos null.
 				entidade = null;
 			}
 		} catch (Exception exception) {

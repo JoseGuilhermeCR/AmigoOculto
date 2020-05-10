@@ -92,7 +92,7 @@ public class SugestaoUI extends BaseUI {
 				contador++;	
 			}
 
-			System.out.println("Pressione qualquer tecla para continuar...");
+			System.out.println("Pressione enter para continuar...");
 			Utils.scanner.nextLine();
 
 			resultado.setObjeto(sugestoes);
@@ -174,6 +174,7 @@ public class SugestaoUI extends BaseUI {
 
 					if (sugestao != null) {
 						Utils.limpaTela();
+						Utils.mostrarMensagemResultado(resultado);
 
 						System.out.println("ALTERANDO SUGESTÃO " + str + "\n");
 						sugestao.prettyPrint();
@@ -186,6 +187,7 @@ public class SugestaoUI extends BaseUI {
 						if (!novaSugestao.equals(sugestao)) {
 							if (Utils.confirmar("Confirmar alteração?")) {
 								crudSugestao.update(novaSugestao);
+								resultado.setSucesso("Sugestão alterada com sucesso.");
 							}
 						}
 					}
@@ -219,6 +221,7 @@ public class SugestaoUI extends BaseUI {
 
 					if (sugestao != null) {
 						Utils.limpaTela();
+						Utils.mostrarMensagemResultado(resultado);
 
 						System.out.println("EXCLUINDO SUGESTÃO " + str + "\n");
 						sugestao.prettyPrint();
@@ -229,6 +232,7 @@ public class SugestaoUI extends BaseUI {
 
 							try { 
 								arvoreUsuarioSugestao.delete(usuario.getID(), sugestao.getID());
+								resultado.setSucesso("Sugestão excluída com sucesso.");
 							} catch (Exception e) {
 								resultado.setErro("Ocorreu um erro durante a exclusão.");
 							}

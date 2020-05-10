@@ -2,35 +2,45 @@
 
 package ui;
 
-import utils.Utils;
+import java.io.IOException;
 
+import utils.Utils;
 import entidades.Usuario;
 import infraestrutura.Infraestrutura;
+import infraestrutura.ArvoreBMais_ChaveComposta_String_Int;
 
 public class MenuUI extends BaseUI {
 
 	private SugestaoUI sugestaoUI;
 	private GrupoUI grupoUI;
+	private NovosConvitesUI novosConvitesUI;
 
 	public MenuUI(Infraestrutura infraestrutura) {
 		super(infraestrutura);
 
 		sugestaoUI = new SugestaoUI(infraestrutura);
 		grupoUI = new GrupoUI(infraestrutura);
+		novosConvitesUI = new NovosConvitesUI(infraestrutura);
 	}
 
 	public Resultado telaMenuPrincipal(Usuario usuario) {
 		Resultado resultado = new Resultado();
 
-		// Talvez não seja uma boa ideia fazer esse tipo de uso para o resultado...
-		// Não foi pensado para se usar dessa maneira.
 		resultado.setSucesso("Bem-vindo " + usuario.getNome() + "!");
 
 		int opcao = 0;
 		do {
 			Utils.limpaTela();
-
 			Utils.mostrarMensagemResultado(resultado);
+
+			// Pega o número de convites pendentes desse usuário.
+			int convites;
+			try {
+				convites = infraestrutura.getListaInvertidaConvitesPendentes()
+							.read(usuario.getEmail()).length;
+			} catch (IOException exception) {
+				convites = 0;
+			}
 
 			System.out.print(
 				"AMIGO OCULTO 1.0\n" +
@@ -38,7 +48,7 @@ public class MenuUI extends BaseUI {
 				"INÍCIO\n\n" +
 				"1) Sugestões de presentes\n" +
 				"2) Grupos\n" +
-				"3) Novos convites: 0\n\n" +
+				"3) Novos convites: " + convites + "\n\n" +
 				"0) Sair\n\n" +
 				"Opcão: "
 			);
@@ -55,6 +65,10 @@ public class MenuUI extends BaseUI {
 					resultado = grupoUI.telaPrincipalGrupos(usuario);
 					break;
 				case 3:
+					if (convites != 0)
+						resultado = novosConvitesUI.telaNovosConvites(usuario);
+					else
+						resultado.setErro("Você não tem convites pendentes.");
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");

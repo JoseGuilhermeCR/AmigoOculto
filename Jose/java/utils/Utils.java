@@ -41,7 +41,6 @@ public class Utils {
 	public static int readInt() {
 		int i = scanner.nextInt();
 		scanner.nextLine(); // limpa buffer
-
 		return i;
 	}
 
@@ -79,8 +78,7 @@ public class Utils {
 
 	public static void limpaTela() {
 		try {
-			// Só funciona em Linux (necessariamente no bash).
-			new ProcessBuilder("bash", "-c", "clear").inheritIO().start().waitFor();
+			new ProcessBuilder("clear").inheritIO().start().waitFor();
 		} catch (Exception exception) {
 			// Talvez escrever no arquivo de log?
 			exception.printStackTrace();

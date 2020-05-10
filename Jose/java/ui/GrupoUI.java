@@ -2,9 +2,12 @@ package ui;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 
 import entidades.Grupo;
+import entidades.Participacao;
 import entidades.Usuario;
 import infraestrutura.ArvoreBMais_Int_Int;
 import infraestrutura.CRUD;
@@ -14,18 +17,29 @@ import utils.Utils;
 public class GrupoUI extends BaseUI {
 
 	private CRUD<Grupo> crudGrupo;
+	private CRUD<Participacao> crudParticipacoes;
+	private CRUD<Usuario> crudUsuarios;
 
 	private ArvoreBMais_Int_Int arvoreUsuarioGrupo;
+	private ArvoreBMais_Int_Int arvoreGrupoParticipacao;
+	private ArvoreBMais_Int_Int arvoreUsuarioParticipacao;
 
 	private ConviteUI conviteUI;
+	private ParticipacaoUI participacaoUI;
 
 	public GrupoUI(Infraestrutura infraestrutura) {
 		super(infraestrutura);
 
 		crudGrupo = infraestrutura.getCrudGrupo();
+		crudParticipacoes = infraestrutura.getCrudParticipacoes();
+		crudUsuarios = infraestrutura.getCrudUsuario();
+
 		arvoreUsuarioGrupo = infraestrutura.getArvoreUsuarioGrupo();
+		arvoreGrupoParticipacao = infraestrutura.getArvoreGrupoParticipacao();
+		arvoreUsuarioParticipacao = infraestrutura.getArvoreUsuarioParticipacao();
 
 		conviteUI = new ConviteUI(infraestrutura);
+		participacaoUI = new ParticipacaoUI(infraestrutura);
 	}
 
 	public Resultado telaPrincipalGrupos(Usuario usuario) {
@@ -56,7 +70,7 @@ public class GrupoUI extends BaseUI {
 					resultado = telaGerenciamentoGrupos(usuario);
 					break;
 				case 2:
-				//	resultado = telaParticipacaoGrupos(usuario);
+					resultado = participacaoUI.telaPrincipalParticipacao(usuario);
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");
@@ -97,6 +111,12 @@ public class GrupoUI extends BaseUI {
 					break;
 				case 2:
 					resultado = conviteUI.telaPrincipalConvites(usuario);
+					break;
+				case 3:
+					resultado = telaParticipantesGrupo(usuario);
+					break;
+				case 4:
+					resultado = telaRealizarSorteio(usuario);
 					break;
 				default:
 					resultado.setErro("Opção (" + opcao + ") inválida.");
@@ -158,7 +178,7 @@ public class GrupoUI extends BaseUI {
 		resultado = infraestrutura.listarRelacao1N(usuario, crudGrupo, arvoreUsuarioGrupo);
 		ArrayList<Grupo> grupos = GrupoUI.filtrarGruposAtivos((ArrayList<Grupo>) resultado.getObjeto());
 
-		if (resultado.valido() && grupos != null && GrupoUI.contemGrupoAtivo(grupos)) {
+		if (resultado.valido() && grupos != null && grupos.size() != 0) {
 			Utils.limpaTela();
 			System.out.println("MEUS GRUPOS\n");
 
@@ -173,7 +193,7 @@ public class GrupoUI extends BaseUI {
 				contador++;
 			}
 
-			System.out.println("Pressione qualquer tecla para continuar...");
+			System.out.println("Pressione enter para continuar...");
 			Utils.scanner.nextLine();
 
 			resultado.setObjeto(grupos);
@@ -287,6 +307,7 @@ public class GrupoUI extends BaseUI {
 						if (novoGrupo != null && !novoGrupo.equals(grupo)) {
 							if (Utils.confirmar("Confirmar alteração?")) {
 								crudGrupo.update(novoGrupo);
+								resultado.setSucesso("Grupo " + novoGrupo.getNome() + " alterado com sucesso!");
 							}
 						} else {
 							resultado.setErro("Algum erro ocorreu na alteração do grupo (" + str + ").");
@@ -323,6 +344,7 @@ public class GrupoUI extends BaseUI {
 
 					if (grupo != null) {
 						Utils.limpaTela();
+						Utils.mostrarMensagemResultado(resultado);
 
 						System.out.println("DESATIVANDO GRUPO " + str + "\n");
 						grupo.prettyPrint();
@@ -331,6 +353,7 @@ public class GrupoUI extends BaseUI {
 						if (Utils.confirmar("Confirmar?")) {
 							grupo.setAtivo(false);
 							crudGrupo.update(grupo);
+							resultado.setSucesso("Grupo " + grupo.getNome() + " desativado com sucesso!");
 						}
 					}
 				}
@@ -340,6 +363,200 @@ public class GrupoUI extends BaseUI {
 		return resultado;
 	}
 
+	private Resultado telaParticipantesGrupo(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		int opcao;
+		do {
+			Utils.limpaTela();
+
+			Utils.mostrarMensagemResultado(resultado);
+
+			System.out.print(
+				"AMIGO OCULTO 1.0\n" +
+				"================\n\n" +
+				"INÍCIO > MENU GRUPOS > GERENCIAMENTO DE GRUPOS > PARTICIPANTES\n\n" +
+				"1) Listagem\n" +
+				"2) Remoção\n" +
+				"0) Retornar ao menu anterior\n\n" +
+				"Opção: "
+			);
+			opcao = Utils.readInt();
+
+			switch (opcao) {
+				case 0:
+					resultado.setSucesso("PARTICIPANTES > GERENCIAMENTO DE GRUPOS");
+					break;
+				case 1:
+					resultado = telaListarParticipantesGrupo(usuario);
+					break;
+				case 2:
+					resultado = telaRemoverParticipantesGrupo(usuario);
+					break;
+				default:
+					resultado.setErro("Opção (" + opcao + ") inválida.");
+			}
+		} while (opcao != 0);
+
+		return resultado;
+	}
+
+	private Resultado telaListarParticipantesGrupo(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		resultado = telaListarGrupos(usuario);
+		if (resultado.valido()) {
+			ArrayList<Grupo> grupos = (ArrayList<Grupo>) resultado.getObjeto();
+
+			System.out.print("Quer ver os participantes de qual grupo? (0 para voltar): ");
+			int opcao = Utils.readInt();
+
+			if (opcao != 0) {
+				int indice = opcao - 1;
+				if (indice >= 0 && indice < grupos.size()) {
+					Grupo grupo = grupos.get(indice);
+
+					// Apresenta informações mais detalhadas do grupo.
+					Utils.limpaTela();
+					System.out.print("INFORMAÇÕES DO GRUPO\n\n");
+					grupo.fullPrettyPrint();
+					if (grupo.isSorteado()) {
+						System.out.print("\nObserve que o sorteio desse grupo já aconteceu!\n\n");
+					} else {
+						System.out.print("\nObserve que o sorteio desse grupo ainda não aconteceu!\n\n");
+					}
+
+					// Busca os usuários que participam desse grupo.
+					resultado = infraestrutura.listarRelacao1N(grupo, crudParticipacoes, arvoreGrupoParticipacao);
+
+					if (resultado.valido()) {
+						ArrayList<Participacao> participacoes = (ArrayList<Participacao>) resultado.getObjeto();
+
+						System.out.println("Participantes deste grupo:");
+						// Agora usar os ids dos usuários nas participações para recuperar os usuários que estão no grupo
+						// e mostrar o nome desses usuários na tela.
+						for (Participacao participacao : participacoes) {
+							if (participacao != null) {
+								Usuario u = crudUsuarios.read(participacao.getIDUsuario());
+								if (u != null) {
+									System.out.println(u.getNome() + " - " + u.getEmail());
+								}	
+							}
+						}
+
+						System.out.print("\nPressione enter para continuar...");
+						Utils.scanner.nextLine();
+					} else {
+						resultado.setErro("Não foi possível recuperar os participantes deste grupo.");
+					}
+
+				} else {
+					resultado.setErro("Grupo escolhido não existe.");
+				}
+			} else {
+				resultado.setSucesso("Listagem cancelada");
+			}
+		}
+
+		return resultado;
+	}
+
+	private Resultado telaRemoverParticipantesGrupo(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		resultado = telaListarGrupos(usuario);
+		if (resultado.valido()) {
+			ArrayList<Grupo> grupos = (ArrayList<Grupo>) resultado.getObjeto();
+
+			System.out.print("Quer remover participantes de qual grupo? (0 para voltar): ");
+			int opcao = Utils.readInt();
+
+			if (opcao != 0) {
+				int indice = opcao - 1;
+				if (indice >= 0 && indice < grupos.size()) {
+					Grupo grupo = grupos.get(indice);
+
+					// Apresenta informações mais detalhadas do grupo.
+					Utils.limpaTela();
+					System.out.print("INFORMAÇÕES DO GRUPO\n\n");
+					grupo.fullPrettyPrint();
+					if (grupo.isSorteado()) {
+						System.out.print("\nObserve que o sorteio desse grupo já aconteceu!\n\n");
+					} else {
+						System.out.print("\nObserve que o sorteio desse grupo ainda não aconteceu!\n\n");
+					}
+
+					// Busca os usuários que participam desse grupo.
+					resultado = infraestrutura.listarRelacao1N(grupo, crudParticipacoes, arvoreGrupoParticipacao);
+
+					if (resultado.valido()) {
+						ArrayList<Participacao> participacoes = (ArrayList<Participacao>) resultado.getObjeto();
+						HashMap<Integer, Integer> presenteadosPor = new HashMap<>();
+
+						System.out.println("Participantes deste grupo:");
+						// Agora usar os ids dos usuários nas participações para recuperar os usuários que estão no grupo
+						int contador = 1;
+						for (Participacao participacao : participacoes) {
+							if (participacao != null) {
+								//Mostrar o nome desses usuários na tela.
+								Usuario u = crudUsuarios.read(participacao.getIDUsuario());
+								if (u != null) {
+									System.out.println(contador + "\t" + u.getNome() + " - " + u.getEmail());
+								}
+
+								if (grupo.isSorteado()) {
+									presenteadosPor.put(participacao.getIDAmigo(), participacao.getID());
+								}
+							}
+
+							++contador;
+						}
+						
+						System.out.print("\nQual participante você quer remover? (0 para voltar): ");
+						opcao = Utils.readInt();
+
+						if (opcao != 0) {
+							indice = opcao - 1;
+							if (indice >= 0 && indice < participacoes.size()) {
+								Participacao participacaoRemovida = participacoes.get(indice);
+								Usuario usuarioRemovido = crudUsuarios.read(participacaoRemovida.getIDUsuario());
+								
+								// É necessário transferir o presente que seria presenteado a esse para outro usuário.
+								if (grupo.isSorteado()) {
+									int idParticipacaoPresenteariaRemovido = presenteadosPor.get(usuarioRemovido.getID());
+									// A participação que presentearia o removido vai presentear quem o removido presentearia.
+									Participacao p = crudParticipacoes.read(idParticipacaoPresenteariaRemovido);
+									p.setIDAmigo(participacaoRemovida.getIDAmigo());
+									crudParticipacoes.update(p);
+								}
+
+								crudParticipacoes.delete(participacaoRemovida.getID());
+								
+								try {
+									arvoreGrupoParticipacao.delete(grupo.getID(), participacaoRemovida.getID());
+									arvoreUsuarioParticipacao.delete(usuarioRemovido.getID(), participacaoRemovida.getID());
+								} catch (IOException exception) {
+									resultado.setErro("Um erro ocorreu na remoção do usuário.");
+								}
+							} else {
+								resultado.setErro("Usuário escolhido não existe.");
+							}
+						} else {
+							resultado.setSucesso("Remoção cancelada");
+						}
+					} else {
+						resultado.setErro("Não foi possível recuperar os participantes deste grupo.");
+					}
+				} else {
+					resultado.setErro("Grupo escolhido não existe.");
+				}
+			} else {
+				resultado.setSucesso("Remoção cancelada");
+			}
+		}
+
+		return resultado;
+	}
 
 	private Grupo lerNovoGrupo(Grupo grupo) {
 		Grupo novoGrupo = null;
@@ -390,6 +607,78 @@ public class GrupoUI extends BaseUI {
 
 		return novoGrupo;
 	}
+
+	private Resultado telaRealizarSorteio(Usuario usuario) {
+		Resultado resultado = new Resultado();
+
+		resultado = infraestrutura.listarRelacao1N(usuario, crudGrupo, arvoreUsuarioGrupo);
+		if (resultado.valido()) {
+			ArrayList<Grupo> grupos = GrupoUI.filtrarGruposAtivos((ArrayList<Grupo>) resultado.getObjeto());
+			grupos = GrupoUI.filtrarGruposASortear(grupos);
+
+			if (grupos != null && grupos.size() != 0) {
+				Utils.limpaTela();
+				System.out.println("GRUPOS A SORTEAR:\n");
+
+				int contador = 1;
+				for (Grupo grupo : grupos) {
+					// Caso o CRUD não ache o grupo com esse ID, será retornado null.
+					if (grupo != null) {
+						System.out.print(contador + ".");
+						grupo.prettyPrint();
+						System.out.println();
+					}
+					contador++;
+				}
+
+				System.out.println();
+				System.out.print("Escolha um grupo (0 para voltar): ");
+
+				int indice = Utils.readInt() - 1;
+				if (indice >= 0 && indice < grupos.size()) {
+					Grupo grupo = grupos.get(indice);
+
+					Utils.limpaTela();
+					System.out.println("INFORMAÇÕES DO GRUPO\n");
+					grupo.fullPrettyPrint();
+
+					// Recupera todas as participações deste grupo.
+					resultado = infraestrutura.listarRelacao1N(grupo, crudParticipacoes, arvoreGrupoParticipacao);
+					if (resultado.valido()) {
+						ArrayList<Participacao> participacoes = (ArrayList<Participacao>) resultado.getObjeto();
+						// Embaralha essas participações.
+						Collections.shuffle(participacoes);
+
+						// Para cada participação.
+						for (int i = 0; i < participacoes.size(); ++i) {
+							Participacao participacao = participacoes.get(i);
+							// O usuário desta presenteará o da próxima (circular, então último presenteia o primeiro).
+							participacao.setIDAmigo(participacoes.get((i + 1) % participacoes.size()).getIDUsuario());
+							crudParticipacoes.update(participacao);
+						}
+
+						grupo.setSorteado(true);
+						crudGrupo.update(grupo);
+
+						System.out.print("Sorteio realizado com sucesso! Pressione enter para continuar...");
+						Utils.scanner.nextLine();
+
+						resultado.setSucesso("Sorteio realizado.");
+					} else {
+						resultado.setErro("Um erro ocorreu na busca dos participantes do grupo.");
+					}
+				} else if (indice == -1) {
+					resultado.setSucesso("Escolha cancelada.");
+				} else {
+					resultado.setErro("Um erro ocorreu durante a escolha do grupo.");
+				}
+			} else {
+				resultado.setErro("Você não tem nenhum grupo a sortear.");
+			}	
+		}
+		
+		return resultado;
+	}
 	
 	public static boolean contemGrupoAtivo(ArrayList<Grupo> grupos) {
 		boolean resp = false;
@@ -429,6 +718,23 @@ public class GrupoUI extends BaseUI {
 
 			for (Grupo grupo : grupos) {
 				if (grupo != null && agora < grupo.getMomentoSorteio())
+					filtrados.add(grupo);
+			}
+		}
+
+		return filtrados;
+	}
+
+	public static ArrayList<Grupo> filtrarGruposASortear(ArrayList<Grupo> grupos) {
+		ArrayList<Grupo> filtrados = null;
+
+		if (grupos != null) {
+			long agora = new Date().getTime();
+
+			filtrados = new ArrayList<>();
+
+			for (Grupo grupo : grupos) {
+				if (grupo != null && !grupo.isSorteado() && agora > grupo.getMomentoSorteio())
 					filtrados.add(grupo);
 			}
 		}

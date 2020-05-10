@@ -315,7 +315,7 @@ public class ParticipacaoUI extends BaseUI {
 				for (int msg = 0; msg < 5 && i + msg < mensagens.size(); ++msg) {
 					Mensagem mensagem = mensagens.get(i + msg);
 
-					// Coloca usuário no "cache" de remetentes caso ele já não esteja nele.
+					// Coloca usuário no mapa, que funciona como um cache, de remetentes caso ele já não esteja nele.
 					int idUsuario = mensagem.getIdUsuario();
 					if (!remetentes.containsKey(idUsuario)) {
 						remetentes.put(idUsuario, crudUsuario.read(idUsuario));
@@ -329,7 +329,7 @@ public class ParticipacaoUI extends BaseUI {
 					);
 					System.out.println("\t" + mensagem.getTitulo());
 					System.out.println(mensagem.getConteudo());
-					System.out.println("=======================================================================================");
+					System.out.println("======================================================================================");
 				}
 
 				System.out.print("Avançar página, voltar página ou sair? (a/v/s): ");

@@ -10,7 +10,6 @@ import ui.Resultado;
 
 public class Utils {
 
-	public static String clear = null;
 	public static Scanner scanner = new Scanner(System.in);
 
 	/* Lê a data com o formato indicado. Caso seja vazio, usa o formato padrão dd/MM/yyyy. 
@@ -79,15 +78,12 @@ public class Utils {
 
 	public static void limpaTela() {
 		try {
-			if (clear == null) {
-				if (System.getProperty("os.name").contains("Windows")) {
-					clear = new String("cls");
-				} else {
-					// Should work in Linux and MacOS.
-					clear = new String("clear");
-				}
+			if (System.getProperty("os.name").contains("Windows")) {
+				new ProcessBuilder("cmd", "/C", "cls").inheritIO().start().waitFor();
+			} else {
+				// Should work in Linux and MacOS.
+				new ProcessBuilder("bash", "-c", "clear").inheritIO().start().waitFor();
 			}
-			new ProcessBuilder(clear).inheritIO().start().waitFor();
 		} catch (Exception exception) {
 			// Talvez escrever no arquivo de log?
 			exception.printStackTrace();

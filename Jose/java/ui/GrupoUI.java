@@ -241,16 +241,30 @@ public class GrupoUI extends BaseUI {
 					);
 					String observacoes = Utils.scanner.nextLine();
 
+					// Checa se o usuário quer fazer parte do grupo que está criando.
+					boolean criadorParticipa = Utils.confirmar("Você também quer participar do grupo?");
+
 					if (Utils.confirmar("Completar inclusão?")) {
 						int idInserido = crudGrupo.create(new Grupo(usuario.getID(), nomeGrupo, valorMedio,
 												dataSorteio.getTime(), dataEncontro.getTime(),
 												localEncontro, observacoes));
 						if (idInserido != -1) {
+							if (criadorParticipa) {
+								int idParticipacao = crudParticipacoes.create(new Participacao(usuario.getID(), idInserido, 0));
+
+								try {
+									arvoreGrupoParticipacao.create(idInserido, idParticipacao);
+									arvoreUsuarioParticipacao.create(usuario.getID(), idParticipacao);
+								} catch (IOException exception) {
+									resultado.setErro("Erro ao colocar administrador no grupo.");
+								}
+							}
+
 							try {
 								arvoreUsuarioGrupo.create(usuario.getID(), idInserido);
 								resultado.setSucesso("Inclusão realizada com sucesso.");
 							} catch (IOException exception) {
-								resultado.setErro("Ocorreu um erro durante a inclusão do relacionamento.");
+								resultado.setErro("Ocorreu um erro durante a criação do grupo.");
 							}
 						} else {
 							resultado.setErro("Ocorreu um erro durante a inclusão.");
